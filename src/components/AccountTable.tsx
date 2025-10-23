@@ -384,7 +384,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
                       <Spinner />
                     ) : rankInfo ? (
                       <>
-                        {rankInfo.icon && rankInfo.icon !== '/icons/' && <RankIcon src={rankInfo.icon} alt={rankInfo.rank} />}
+                        {rankInfo.icon && rankInfo.icon !== '/icons/' && rankInfo.icon !== './icons/' && <RankIcon src={rankInfo.icon} alt={rankInfo.rank} />}
                         {rankInfo.rank}
                       </>
                     ) : (
