@@ -1,26 +1,60 @@
-import { useState, useEffect, useMemo } from 'react';
-import styled, { ThemeProvider } from 'styled-components';
-import { theme } from './theme/theme';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
+import { ThemeProvider as CustomThemeProvider } from './contexts/ThemeContext';
+import { useTheme } from './contexts/useTheme';
 import { MasterPasswordDialog } from './components/MasterPasswordDialog';
 import { AccountForm } from './components/AccountForm';
 import { AccountTable } from './components/AccountTable';
 import { SearchBar } from './components/SearchBar';
+import { ThemeToggle } from './components/ThemeToggle';
+import { FileUpload } from './components/FileUpload';
 import { EncryptionService } from './utils/encryption';
 import type { Account } from './types';
 import './App.css';
 
+const GlobalStyle = createGlobalStyle`
+  body {
+    background-color: ${props => props.theme.colors.background};
+    color: ${props => props.theme.colors.text.primary};
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  :root {
+    --scrollbar-track: ${props => props.theme.colors.surface};
+    --scrollbar-thumb: ${props => props.theme.colors.border};
+    --scrollbar-thumb-hover: ${props => props.theme.colors.text.secondary};
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+`;
+
 const AppContainer = styled.div`
   min-height: 100vh;
+  width: 100%;
   background: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.text.primary};
   font-family: ${props => props.theme.fonts.primary};
+  transition: ${props => props.theme.effects.transition};
+  display: flex;
+  flex-direction: column;
 `;
 
 const Container = styled.div`
   padding: ${(props) => props.theme.sizes.spacing.lg};
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
   overflow: hidden; /* Prevent scrolling on the main container */
 `;
 
@@ -35,7 +69,10 @@ const Header = styled.header`
   background: ${props => props.theme.colors.secondary};
   border-bottom: 2px solid ${props => props.theme.colors.border};
   padding: ${props => props.theme.sizes.spacing.lg};
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: ${props => props.theme.effects.transition};
 `;
 
 const Title = styled.h1`
@@ -43,12 +80,14 @@ const Title = styled.h1`
   font-size: ${props => props.theme.sizes.fontSize.xxlarge};
   margin: 0;
   font-weight: 700;
+  transition: ${props => props.theme.effects.transition};
 `;
 
 const Subtitle = styled.p`
   color: ${props => props.theme.colors.text.secondary};
   font-size: ${props => props.theme.sizes.fontSize.medium};
   margin: ${props => props.theme.sizes.spacing.sm} 0 0 0;
+  transition: ${props => props.theme.effects.transition};
 `;
 
 const LoadingContainer = styled.div`
@@ -58,6 +97,7 @@ const LoadingContainer = styled.div`
   min-height: 200px;
   color: ${props => props.theme.colors.text.secondary};
   font-size: ${props => props.theme.sizes.fontSize.large};
+  transition: ${props => props.theme.effects.transition};
 `;
 
 const ErrorContainer = styled.div`
@@ -68,6 +108,42 @@ const ErrorContainer = styled.div`
   margin: ${props => props.theme.sizes.spacing.md};
   color: ${props => props.theme.colors.error};
   text-align: center;
+  transition: ${props => props.theme.effects.transition};
+`;
+
+const HeaderContent = styled.div`
+  text-align: center;
+  flex-grow: 1;
+`;
+
+const HeaderControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.sizes.spacing.md};
+`;
+
+const ImportButton = styled.button`
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  padding: ${props => props.theme.sizes.spacing.sm} ${props => props.theme.sizes.spacing.md};
+  font-size: ${props => props.theme.sizes.fontSize.medium};
+  font-weight: 600;
+  cursor: pointer;
+  transition: ${props => props.theme.effects.transition};
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.sizes.spacing.sm};
+  
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 const ControlsContainer = styled.div`
@@ -75,6 +151,7 @@ const ControlsContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${(props) => props.theme.sizes.spacing.md};
+  gap: ${props => props.theme.sizes.spacing.md};
 `;
 
 const SearchBarContainer = styled.div`
@@ -88,6 +165,7 @@ const Footer = styled.footer`
   font-size: ${props => props.theme.sizes.fontSize.small};
   border-top: 1px solid ${props => props.theme.colors.border}40;
   margin-top: auto;
+  transition: ${props => props.theme.effects.transition};
 `;
 
 const FooterText = styled.p`
@@ -108,7 +186,8 @@ const GithubLink = styled.a`
   }
 `;
 
-function App() {
+function AppContent() {
+  const { theme } = useTheme();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(true);
   const [masterPassword, setMasterPassword] = useState('');
@@ -119,12 +198,49 @@ function App() {
   const [sortConfig, setSortConfig] = useState<{ key: keyof Account | 'rank'; direction: 'ascending' | 'descending' } | null>(null);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+
+  const loadAccounts = useCallback(async () => {
+    if (!masterPassword) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await window.electronAPI.loadAccounts();
+      if (result.success && result.data) {
+        const decryptedData = EncryptionService.decrypt(result.data);
+        const accountsData = JSON.parse(decryptedData);
+        // Map accountName from JSON to riotId in our app
+        const mappedAccounts = Array.isArray(accountsData) 
+          ? accountsData.map((acc: Account & { accountName?: string }) => {
+              const riotId = acc.accountName || acc.riotId;
+              console.log('Loading account:', { riotId, hashtag: acc.hashtag, username: acc.username });
+              return {
+                ...acc,
+                riotId,
+                accountName: undefined // Remove the old field
+              };
+            })
+          : [];
+        setAccounts(mappedAccounts);
+      } else {
+        setAccounts([]);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+      setError('Failed to load accounts. Please check your password.');
+      setAccounts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [masterPassword]);
 
   useEffect(() => {
     if (isAuthenticated && masterPassword) {
       loadAccounts();
     }
-  }, [isAuthenticated, masterPassword]);
+  }, [isAuthenticated, masterPassword, loadAccounts]);
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
@@ -135,7 +251,7 @@ function App() {
   }, [accounts, searchTerm]);
 
   const sortedAccounts = useMemo(() => {
-    let sortableAccounts = [...filteredAccounts];
+    const sortableAccounts = [...filteredAccounts];
     if (sortConfig !== null && sortConfig.key !== 'rank') {
       sortableAccounts.sort((a, b) => {
         const key = sortConfig.key as keyof Account;
@@ -157,42 +273,6 @@ function App() {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
-  };
-
-  const loadAccounts = async () => {
-    if (!masterPassword) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const result = await window.electronAPI.loadAccounts();
-      if (result.success && result.data) {
-        const decryptedData = EncryptionService.decrypt(result.data);
-        const accountsData = JSON.parse(decryptedData);
-        // Map accountName from JSON to riotId in our app
-        const mappedAccounts = Array.isArray(accountsData) 
-          ? accountsData.map((acc: any) => {
-              const riotId = acc.accountName || acc.riotId;
-              console.log('Loading account:', { riotId, hashtag: acc.hashtag, username: acc.username });
-              return {
-                ...acc,
-                riotId,
-                accountName: undefined // Remove the old field
-              };
-            })
-          : [];
-        setAccounts(mappedAccounts);
-      } else {
-        setAccounts([]);
-      }
-    } catch (error) {
-      console.error('Error loading accounts:', error);
-      setError('Failed to load accounts. Please check your password.');
-      setAccounts([]);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const saveAccounts = async (accountsToSave: Account[]) => {
@@ -248,6 +328,32 @@ function App() {
     saveAccounts(updatedAccounts);
   };
 
+  const handleAccountsImported = (importedAccounts: Account[]) => {
+    const updatedAccounts = [...accounts];
+    
+    // For each imported account, check if username already exists
+    importedAccounts.forEach(importedAccount => {
+      const existingIndex = updatedAccounts.findIndex(
+        existing => existing.username.toLowerCase() === importedAccount.username.toLowerCase() ||
+                   existing.riotId.toLowerCase() === importedAccount.riotId.toLowerCase()
+      );
+      
+      if (existingIndex >= 0) {
+        // Replace existing account with imported data
+        updatedAccounts[existingIndex] = {
+          ...importedAccount,
+          id: updatedAccounts[existingIndex].id // Keep the original ID
+        };
+      } else {
+        // Add new account if it doesn't exist
+        updatedAccounts.push(importedAccount);
+      }
+    });
+    
+    saveAccounts(updatedAccounts);
+    setShowFileUpload(false);
+  };
+
   const handleFormSubmit = (account: Account) => {
     if (editingAccountIndex !== null) {
       // Update existing account
@@ -266,11 +372,18 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      <GlobalStyle />
       <AppContainer>
         <Container>
           <Header>
-            <Title>Valorant Account Manager</Title>
-            <Subtitle>Secure account management and rank tracking</Subtitle>
+            <div /> {/* Spacer for left side */}
+            <HeaderContent>
+              <Title>Valorant Account Manager</Title>
+              <Subtitle>Secure account management and rank tracking</Subtitle>
+            </HeaderContent>
+            <HeaderControls>
+              <ThemeToggle />
+            </HeaderControls>
           </Header>
 
           {showPasswordDialog && (
@@ -298,7 +411,18 @@ function App() {
                 <SearchBarContainer>
                   <SearchBar searchTerm={searchTerm} onSearchTermChange={setSearchTerm} />
                 </SearchBarContainer>
+                <ImportButton onClick={() => setShowFileUpload(!showFileUpload)}>
+                  📁 Import Accounts
+                </ImportButton>
               </ControlsContainer>
+
+              {showFileUpload && (
+                <FileUpload
+                  isVisible={showFileUpload}
+                  onAccountsImported={handleAccountsImported}
+                  onClose={() => setShowFileUpload(false)}
+                />
+              )}
 
               {isLoading ? (
                 <LoadingContainer>
@@ -333,6 +457,14 @@ function App() {
         </Container>
       </AppContainer>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <CustomThemeProvider>
+      <AppContent />
+    </CustomThemeProvider>
   );
 }
 

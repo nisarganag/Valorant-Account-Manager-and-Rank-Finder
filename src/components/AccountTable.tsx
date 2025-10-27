@@ -36,6 +36,7 @@ const TableContainer = styled.div`
   margin: ${props => props.theme.sizes.spacing.md} 0;
   overflow-x: auto;
   box-shadow: ${props => props.theme.effects.cardShadow};
+  transition: ${props => props.theme.effects.transition};
 `;
 
 const Table = styled.table`
@@ -49,6 +50,7 @@ const TableHeader = styled.th`
   color: ${props => props.theme.colors.text.primary};
   padding: ${props => props.theme.sizes.spacing.md};
   text-align: center;
+  transition: ${props => props.theme.effects.transition};
   font-size: ${props => props.theme.sizes.fontSize.medium};
   font-weight: 600;
   border-bottom: 2px solid ${props => props.theme.colors.border};
@@ -212,7 +214,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
 
   const sortedAccounts = useMemo(() => {
-    let sortableItems = [...accounts];
+    const sortableItems = [...accounts];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         const indexA = accounts.indexOf(a);
@@ -253,7 +255,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
       console.error(`Failed to fetch rank for ${account.username}:`, error);
       setRanks(prevRanks => ({
         ...prevRanks,
-        [index]: { rank: 'Fetch Failed', icon: '', color: theme.colors.error },
+        [index]: { rank: 'Account Private', icon: '', color: theme.colors.error },
       }));
     } finally {
       setLoadingRanks(prev => ({ ...prev, [index]: false }));
@@ -276,7 +278,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
             return { index: globalIndex, rankInfo };
           } catch (error) {
             console.error(`Failed to fetch rank for ${account.username}:`, error);
-            const errorInfo = { rank: 'Fetch Failed', icon: '', color: theme.colors.error };
+            const errorInfo = { rank: 'Account Private', icon: '', color: theme.colors.error };
             return { index: globalIndex, rankInfo: errorInfo };
           }
         }

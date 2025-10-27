@@ -1,4 +1,6 @@
-export * from './AccountForm';
-export * from './AccountTable';
-export * from './MasterPasswordDialog';
-export * from './SearchBar';
+export { AccountForm } from './AccountForm';
+export { AccountTable } from './AccountTable';
+export { MasterPasswordDialog } from './MasterPasswordDialog';
+export { SearchBar } from './SearchBar';
+export { ThemeToggle } from './ThemeToggle';
+export { FileUpload } from './FileUpload';

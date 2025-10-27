@@ -14,7 +14,13 @@ export class RankService {
       if (window.electronAPI && window.electronAPI.fetchRank) {
         const result = await window.electronAPI.fetchRank(cleanRiotId, account.hashtag, account.region);
         if (result.success && result.data) {
-          rankString = result.data.current_rank || (typeof result.data === 'string' ? result.data : 'Fetch Failed');
+          if (typeof result.data === 'string') {
+            rankString = result.data;
+          } else if (result.data && typeof result.data === 'object' && 'current_rank' in result.data) {
+            rankString = result.data.current_rank || 'Fetch Failed';
+          } else {
+            rankString = 'Fetch Failed';
+          }
         } else {
           rankString = 'Fetch Failed';
         }
@@ -71,11 +77,11 @@ export class RankService {
       }
       
       return 'Fetch Failed';
-    } catch (error: any) {
-      if (error.response) {
-        console.error(`Error fetching rank - Status: ${error.response.status}, URL: ${this.API_BASE_URL}/${encodeURIComponent(account.riotId)}/${encodeURIComponent(account.hashtag)}/${account.region}`);
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        console.error(`Error fetching rank - Status: ${(error as { response: { status: number } }).response.status}, URL: ${this.API_BASE_URL}/${encodeURIComponent(account.riotId)}/${encodeURIComponent(account.hashtag)}/${account.region}`);
       } else {
-        console.error('Error fetching rank directly:', error.message);
+        console.error('Error fetching rank directly:', error instanceof Error ? error.message : 'Unknown error');
       }
       return 'API Error';
     }
