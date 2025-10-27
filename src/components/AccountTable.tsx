@@ -255,7 +255,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
       console.error(`Failed to fetch rank for ${account.username}:`, error);
       setRanks(prevRanks => ({
         ...prevRanks,
-        [index]: { rank: 'Fetch Failed', icon: '', color: theme.colors.error },
+        [index]: { rank: 'Account Private', icon: '', color: theme.colors.error },
       }));
     } finally {
       setLoadingRanks(prev => ({ ...prev, [index]: false }));
@@ -278,7 +278,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
             return { index: globalIndex, rankInfo };
           } catch (error) {
             console.error(`Failed to fetch rank for ${account.username}:`, error);
-            const errorInfo = { rank: 'Fetch Failed', icon: '', color: theme.colors.error };
+            const errorInfo = { rank: 'Account Private', icon: '', color: theme.colors.error };
             return { index: globalIndex, rankInfo: errorInfo };
           }
         }
