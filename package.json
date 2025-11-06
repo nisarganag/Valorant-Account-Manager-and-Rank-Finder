@@ -163,11 +163,10 @@
       ],
       "icon": "public/icons/Valorant_Account_Manager.png",
       "category": "Utility",
-      "desktop": {
-        "Name": "Valorant Account Manager",
-        "Comment": "Manage multiple Valorant accounts with rank tracking",
-        "Keywords": "Valorant;Gaming;Account;Manager;"
-      }
+      "maintainer": "Valorant Account Manager Team",
+      "vendor": "Valorant Account Manager",
+      "synopsis": "Manage multiple Valorant accounts with rank tracking",
+      "description": "A secure desktop application for managing multiple Valorant accounts with real-time rank tracking and encrypted credential storage."
     }
   }
 }
