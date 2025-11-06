@@ -124,29 +124,98 @@ const HeaderControls = styled.div`
 `;
 
 const UpdateButton = styled.button`
-  background: transparent;
+  background: ${props => `linear-gradient(135deg, ${props.theme.colors.primary}15, ${props.theme.colors.secondary}10)`};
   color: ${props => props.theme.colors.text.secondary};
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: ${props => props.theme.sizes.borderRadius};
-  padding: ${props => props.theme.sizes.spacing.xs} ${props => props.theme.sizes.spacing.sm};
-  font-size: 16px;
+  padding: ${props => props.theme.sizes.spacing.xs};
   cursor: pointer;
-  transition: ${props => props.theme.effects.transition};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  position: relative;
+  overflow: hidden;
+  animation: subtlePulse 3s ease-in-out infinite;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: ${props => `linear-gradient(135deg, ${props.theme.colors.primary}20, ${props.theme.colors.secondary}15)`};
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
   &:hover {
-    background: ${props => props.theme.colors.surface};
-    color: ${props => props.theme.colors.text.primary};
+    background: ${props => `linear-gradient(135deg, ${props.theme.colors.primary}25, ${props.theme.colors.secondary}20)`};
+    color: ${props => props.theme.colors.primary};
     border-color: ${props => props.theme.colors.primary};
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    animation: none; /* Stop the pulse animation on hover */
+
+    &::before {
+      opacity: 1;
+    }
+
+    .update-icon {
+      animation: rotateUpdate 0.8s ease-in-out infinite;
+    }
   }
 
   &:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  @keyframes rotateUpdate {
+    0% { 
+      transform: rotate(0deg) scale(1);
+    }
+    25% { 
+      transform: rotate(90deg) scale(1.1);
+    }
+    50% { 
+      transform: rotate(180deg) scale(1);
+    }
+    75% { 
+      transform: rotate(270deg) scale(1.1);
+    }
+    100% { 
+      transform: rotate(360deg) scale(1);
+    }
+  }
+
+  @keyframes subtlePulse {
+    0%, 100% { 
+      box-shadow: 0 0 0 0 ${props => props.theme.colors.primary}20;
+    }
+    50% { 
+      box-shadow: 0 0 0 4px ${props => props.theme.colors.primary}10;
+    }
+  }
+`;
+
+const UpdateIcon = styled.div`
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    transition: transform 0.3s ease;
   }
 `;
 
@@ -421,7 +490,17 @@ function AppContent() {
             </HeaderContent>
             <HeaderControls>
               <UpdateButton onClick={handleCheckForUpdates} title="Check for updates">
-                🔄
+                <UpdateIcon className="update-icon">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2V6.25L16 2.25L20 6.25L16 10.25L12 6.25V10.5C16.14 10.5 19.5 13.86 19.5 18H21C21 13.03 16.97 9 12 9V2Z" 
+                          fill="currentColor" 
+                          opacity="0.9"/>
+                    <path d="M12 22V17.75L8 21.75L4 17.75L8 13.75L12 17.75V13.5C7.86 13.5 4.5 10.14 4.5 6H3C3 10.97 7.03 15 12 15V22Z" 
+                          fill="currentColor" 
+                          opacity="0.7"/>
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                  </svg>
+                </UpdateIcon>
               </UpdateButton>
               <ThemeToggle />
             </HeaderControls>
