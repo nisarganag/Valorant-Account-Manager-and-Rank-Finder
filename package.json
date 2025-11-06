@@ -1,7 +1,7 @@
 {
   "name": "valo-react-app",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Valorant Account Manager - Manage multiple Valorant accounts with rank tracking",
   "author": "Your Name",
   "type": "module",
@@ -99,11 +99,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "public/icons/Valorant_Account_Manager.png",
@@ -138,15 +144,21 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "rpm",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/icons/Valorant_Account_Manager.png",
