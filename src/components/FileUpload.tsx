@@ -332,12 +332,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             {error ? '❌ Error selecting file' : '📎 Drop your file here or click to browse'}
           </DropZoneText>
           <DropZoneSubtext>
-            Supported formats: .exe, .txt, .json, .csv, .xml, .xlsx, .xls, .docx, .doc files containing account data
+            Supported formats: .json, .csv files containing account data
           </DropZoneSubtext>
           <HiddenInput
             ref={fileInputRef}
             type="file"
-            accept=".exe,.txt,.json,.csv,.xml,.xlsx,.xls,.docx,.doc"
+            accept=".json,.csv"
             onChange={handleFileInputChange}
           />
         </DropZone>
