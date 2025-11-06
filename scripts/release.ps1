@@ -57,3 +57,8 @@ git push origin "v$newVersion"
 Write-Host "✅ Release process complete!" -ForegroundColor Green
 Write-Host "🌐 Check GitHub Actions: https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/actions" -ForegroundColor Cyan
 Write-Host "📦 Releases will be available at: https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/releases" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "🔄 Cross-Platform builds will be created:" -ForegroundColor Yellow
+Write-Host "  🪟 Windows: .exe installer" -ForegroundColor Blue
+Write-Host "  🍎 macOS: .dmg and .zip files (Intel + Apple Silicon)" -ForegroundColor Blue  
+Write-Host "  🐧 Linux: .AppImage, .deb, and .rpm packages" -ForegroundColor Blue

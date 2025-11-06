@@ -12,7 +12,11 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout code
@@ -30,14 +34,36 @@ jobs:
     - name: Build and publish
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm run publish
+        CSC_IDENTITY_AUTO_DISCOVERY: false # Disable code signing for now
+      run: npm run publish
 
-    - name: Upload artifacts
+    - name: Upload Windows artifacts
+      if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: release-artifacts
+        name: windows-artifacts
         path: |
           dist-electron/*.exe
           dist-electron/*.exe.blockmap
           dist-electron/latest.yml
+
+    - name: Upload macOS artifacts
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-artifacts
+        path: |
+          dist-electron/*.dmg
+          dist-electron/*.zip
+          dist-electron/*-mac.yml
+
+    - name: Upload Linux artifacts
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-artifacts
+        path: |
+          dist-electron/*.AppImage
+          dist-electron/*.deb
+          dist-electron/*.rpm
+          dist-electron/*-linux.yml

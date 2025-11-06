@@ -16,7 +16,11 @@
     "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "build-electron": "npm run build && electron-builder",
     "dist": "npm run build && electron-builder --publish=never",
-    "publish": "npm run build && electron-builder --publish=always"
+    "publish": "npm run build && electron-builder --publish=always",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux",
+    "build:all": "npm run build && electron-builder --win --mac --linux"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -92,12 +96,66 @@
       "shortcutName": "Valorant Account Manager"
     },
     "mac": {
-      "target": "dmg",
-      "icon": "public/icons/Valorant_Account_Manager.png"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "public/icons/Valorant_Account_Manager.png",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "icon": "public/icons/Valorant_Account_Manager.png",
+      "background": "build/dmg-background.png",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "public/icons/Valorant_Account_Manager.png"
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/icons/Valorant_Account_Manager.png",
+      "category": "Utility",
+      "desktop": {
+        "Name": "Valorant Account Manager",
+        "Comment": "Manage multiple Valorant accounts with rank tracking",
+        "Keywords": "Valorant;Gaming;Account;Manager;"
+      }
     }
   }
 }
