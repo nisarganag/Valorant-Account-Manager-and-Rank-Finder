@@ -213,6 +213,43 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
   const [currentlyFetchingIndex, setCurrentlyFetchingIndex] = useState<number | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
 
+  const handleShareAccount = (account: Account, index: number) => {
+    const rankInfo = ranks[index];
+    const accountDetails = `🎮 Valorant Account Details 🎮
+
+📋 Riot ID: ${account.riotId}#${account.hashtag}
+👤 Username: ${account.username || 'Not provided'}
+🌍 Region: ${account.region.toUpperCase()}
+🏆 Rank: ${rankInfo?.rank || 'Unknown'}
+✨ Has Skins: ${account.hasSkins ? 'Yes' : 'No'}
+📅 Last Updated: ${account.lastRefreshed ? new Date(account.lastRefreshed).toLocaleDateString() : 'Never'}
+
+--
+Shared via Valorant Account Manager`;
+
+    if (navigator.share) {
+      // Use Web Share API if available (mobile devices)
+      navigator.share({
+        title: `Valorant Account: ${account.riotId}#${account.hashtag}`,
+        text: accountDetails,
+      }).catch(err => console.log('Error sharing:', err));
+    } else {
+      // Fallback: Copy to clipboard
+      navigator.clipboard.writeText(accountDetails).then(() => {
+        alert('Account details copied to clipboard! You can now paste it in WhatsApp, Discord, or any other app.');
+      }).catch(() => {
+        // If clipboard fails, show a modal with the text
+        const textArea = document.createElement('textarea');
+        textArea.value = accountDetails;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('Account details copied to clipboard! You can now paste it in WhatsApp, Discord, or any other app.');
+      });
+    }
+  };
+
   const sortedAccounts = useMemo(() => {
     const sortableItems = [...accounts];
     if (sortConfig !== null) {
@@ -401,6 +438,7 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
                     <Button onClick={() => handleFetchRank(globalIndex, account)} disabled={isLoading}>
                       {isLoading ? <Spinner /> : 'Refresh'}
                     </Button>
+                    <Button onClick={() => handleShareAccount(account, globalIndex)} variant="secondary">Share</Button>
                   </ActionButtonContainer>
                 </TableCell>
               </TableRow>

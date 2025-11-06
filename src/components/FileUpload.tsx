@@ -216,11 +216,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     resetState();
     
     // Validate file type - accept multiple formats
-    const allowedExtensions = ['.exe', '.txt', '.json', '.csv', '.xml', '.xlsx', '.xls', '.docx', '.doc'];
+    const allowedExtensions = ['.json', '.csv'];
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
     if (!allowedExtensions.includes(fileExtension)) {
-      setError('Please select a supported file format (.exe, .txt, .json, .csv, .xml, .xlsx, .xls, .docx, .doc)');
+      setError('Please select a supported file format (.json, .csv)');
       return;
     }
     
