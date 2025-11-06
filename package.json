@@ -15,11 +15,13 @@
     "electron": "electron .",
     "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "build-electron": "npm run build && electron-builder",
-    "dist": "npm run build && electron-builder --publish=never"
+    "dist": "npm run build && electron-builder --publish=never",
+    "publish": "npm run build && electron-builder --publish=always"
   },
   "dependencies": {
     "axios": "^1.12.2",
     "crypto-js": "^4.2.0",
+    "electron-updater": "^6.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "styled-components": "^6.1.19"
@@ -54,6 +56,11 @@
     "directories": {
       "output": "dist-electron"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "nisarganag",
+      "repo": "Valorant-Account-Manager-and-Rank-Finder"
+    },
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -71,7 +78,9 @@
     "win": {
       "target": {
         "target": "nsis",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       "icon": "public/icons/Valorant_Account_Manager.png"
     },

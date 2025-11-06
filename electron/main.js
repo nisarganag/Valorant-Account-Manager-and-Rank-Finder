@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -9,13 +10,88 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === 'development';
 
+// Auto-updater configuration
+autoUpdater.checkForUpdatesAndNotify();
+autoUpdater.autoDownload = false; // Don't auto-download, ask user first
+
+// Auto-updater event handlers
+let mainWindow;
+
+autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for update...');
+    sendStatusToWindow('Checking for updates...');
+});
+
+autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info);
+    sendStatusToWindow('Update available!');
+    
+    // Show dialog asking user if they want to download the update
+    dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Available',
+        message: `A new version (${info.version}) is available. Would you like to download it now?`,
+        detail: 'The update will be downloaded in the background and you will be notified when it\'s ready to install.',
+        buttons: ['Download Now', 'Later'],
+        defaultId: 0
+    }).then((result) => {
+        if (result.response === 0) {
+            autoUpdater.downloadUpdate();
+            sendStatusToWindow('Downloading update...');
+        }
+    });
+});
+
+autoUpdater.on('update-not-available', (info) => {
+    console.log('Update not available:', info);
+    sendStatusToWindow('App is up to date.');
+});
+
+autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err);
+    sendStatusToWindow('Error in auto-updater: ' + err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+    console.log(log_message);
+    sendStatusToWindow(`Downloading: ${Math.round(progressObj.percent)}%`);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded:', info);
+    sendStatusToWindow('Update downloaded');
+    
+    // Show dialog asking user if they want to restart and install
+    dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Update Ready',
+        message: 'Update downloaded successfully. The application will restart to apply the update.',
+        detail: 'Click "Restart Now" to install the update, or "Later" to install it the next time you restart the app.',
+        buttons: ['Restart Now', 'Later'],
+        defaultId: 0
+    }).then((result) => {
+        if (result.response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
+});
+
+function sendStatusToWindow(text) {
+    if (mainWindow) {
+        mainWindow.webContents.send('update-status', text);
+    }
+}
+
 function createWindow() {
     // Set icon path based on environment
     const iconPath = isDev 
         ? path.join(__dirname, '../public/icons/Valorant_Account_Manager.png')
         : path.join(process.resourcesPath, 'app.asar/dist/icons/Valorant_Account_Manager.png');
     
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 1556,
         height: 982,
         webPreferences: {
@@ -43,6 +119,13 @@ function createWindow() {
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        
+        // Check for updates after window is ready (only in production)
+        if (!isDev) {
+            setTimeout(() => {
+                autoUpdater.checkForUpdatesAndNotify();
+            }, 3000); // Wait 3 seconds before checking for updates
+        }
     });
 
     // Handle window closed
@@ -141,4 +224,45 @@ ipcMain.handle('fetch-rank', async (event, riotId, hashtag, region) => {
         console.error('Failed to fetch rank:', error.message);
         return { success: false, error: error.message };
     }
+});
+
+// IPC handlers for auto-updater
+ipcMain.handle('check-for-updates', async () => {
+    try {
+        if (isDev) {
+            return { success: false, error: 'Updates not available in development mode' };
+        }
+        const result = await autoUpdater.checkForUpdates();
+        return { success: true, data: result };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('download-update', async () => {
+    try {
+        if (isDev) {
+            return { success: false, error: 'Updates not available in development mode' };
+        }
+        await autoUpdater.downloadUpdate();
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('install-update', async () => {
+    try {
+        if (isDev) {
+            return { success: false, error: 'Updates not available in development mode' };
+        }
+        autoUpdater.quitAndInstall();
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('get-app-version', async () => {
+    return { success: true, version: app.getVersion() };
 });

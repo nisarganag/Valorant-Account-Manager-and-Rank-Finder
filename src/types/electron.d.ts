@@ -20,6 +20,14 @@ export interface ElectronAPI {
     error?: string;
     message?: string;
   }>;
+  
+  // Auto-updater methods
+  checkForUpdates: () => Promise<{ success: boolean; data?: any; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  installUpdate: () => Promise<{ success: boolean; error?: string }>;
+  getAppVersion: () => Promise<{ success: boolean; version?: string; error?: string }>;
+  onUpdateStatus: (callback: (event: any, status: string) => void) => void;
+  removeUpdateStatusListener: (callback: (event: any, status: string) => void) => void;
 }
 
 export interface Versions {

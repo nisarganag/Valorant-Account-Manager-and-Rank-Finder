@@ -8,6 +8,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveMasterKey: (encryptedHash) => ipcRenderer.invoke('save-master-key', encryptedHash),
     loadMasterKey: () => ipcRenderer.invoke('load-master-key'),
     fetchRank: (riotId, hashtag, region) => ipcRenderer.invoke('fetch-rank', riotId, hashtag, region),
+    
+    // Auto-updater APIs
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    downloadUpdate: () => ipcRenderer.invoke('download-update'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    
+    // Listen for update status messages
+    onUpdateStatus: (callback) => ipcRenderer.on('update-status', callback),
+    removeUpdateStatusListener: (callback) => ipcRenderer.removeListener('update-status', callback),
 });
 
 // Expose versions

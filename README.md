@@ -10,7 +10,9 @@ A secure desktop application for managing multiple Valorant accounts with real-t
 - 🔒 **Master Password Protection**: All data is encrypted with AES-256 encryption
 - 🎮 **Real-time Rank Tracking**: Automatically fetch and display current competitive ranks
 - 🖼️ **Rank Icons**: Beautiful rank badge display for all competitive tiers
-- 🔍 **Search & Filter**: Quickly find accounts with smart search functionality
+- � **Auto-Update System**: Automatic update checks and seamless app updates
+- 📱 **Smart Share System**: Share account details with mobile-like interface
+- �🔍 **Search & Filter**: Quickly find accounts with smart search functionality
 - 📊 **Sort by Rank**: Organize accounts by rank, name, or region
 - 🎨 **Modern UI**: Sleek, aesthetic design with smooth animations
 - ✅ **Skins Tracking**: Mark accounts that have skins
@@ -96,7 +98,32 @@ For now, follow the "Build from Source" instructions below.
 - **Sort by Rank**: Click the "Rank" column header
 - **Sort by Region**: Click the "Region" column header
 
-## 🛠️ Tech Stack
+## � Auto-Update System
+
+The application includes a built-in auto-update system that keeps you up to date with the latest features and security improvements.
+
+### How It Works
+
+- **Automatic Checks**: The app checks for updates automatically on startup (production builds only)
+- **Manual Updates**: Click the 🔄 button in the top-right corner to check for updates manually
+- **Smart Downloads**: Updates are downloaded in the background without interrupting your work
+- **Seamless Installation**: Choose when to restart and apply updates
+
+### Update Process
+
+1. **Detection**: App checks GitHub releases for newer versions
+2. **Notification**: If an update is available, you'll see a stylish popup notification
+3. **Download**: Choose to download immediately or postpone
+4. **Installation**: Updates install automatically after restart
+
+### Version Display
+
+- Current app version is always visible in the bottom-left corner
+- Update notifications show detailed version information and release notes
+
+For detailed information about the update system, see [UPDATE.md](UPDATE.md).
+
+## �🛠️ Tech Stack
 
 - **Frontend**: React 19, TypeScript, styled-components
 - **Desktop Framework**: Electron

@@ -205,6 +205,98 @@ const EyeIcon = styled.span`
   }
 `;
 
+const ShareIcon = styled.span`
+  cursor: pointer;
+  font-size: 1.2em;
+  display: inline-block;
+  user-select: none;
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    transform: scale(1.2);
+    color: ${props => props.theme.colors.primary};
+  }
+`;
+
+const ShareModal = styled.div<{ $isOpen: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: ${props => props.$isOpen ? 'flex' : 'none'};
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ShareModalContent = styled.div`
+  background: ${props => props.theme.colors.surface};
+  border: 2px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  padding: ${props => props.theme.sizes.spacing.lg};
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+`;
+
+const ShareModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${props => props.theme.sizes.spacing.md};
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  
+  &:hover {
+    color: ${props => props.theme.colors.primary};
+  }
+`;
+
+const ShareOptionsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: ${props => props.theme.sizes.spacing.md};
+  margin-bottom: ${props => props.theme.sizes.spacing.md};
+`;
+
+const ShareOption = styled.button`
+  background: ${props => props.theme.colors.background};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  padding: ${props => props.theme.sizes.spacing.md};
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${props => props.theme.sizes.spacing.xs};
+  
+  &:hover {
+    background: ${props => props.theme.colors.border}40;
+    transform: translateY(-2px);
+  }
+`;
+
+const ShareOptionIcon = styled.div`
+  font-size: 24px;
+  color: ${props => props.theme.colors.primary};
+`;
+
+const ShareOptionLabel = styled.span`
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.sizes.fontSize.small};
+  font-weight: 500;
+`;
+
 export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, onDelete, onToggleSkins, sortConfig, requestSort }) => {
   const theme = useTheme();
   const [ranks, setRanks] = useState<{ [key: number]: RankInfo }>({});
@@ -212,10 +304,22 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
   const [isFetchingAll, setIsFetchingAll] = useState(false);
   const [currentlyFetchingIndex, setCurrentlyFetchingIndex] = useState<number | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [accountToShare, setAccountToShare] = useState<{ account: Account; index: number } | null>(null);
 
-  const handleShareAccount = (account: Account, index: number) => {
+  const openShareModal = (account: Account, index: number) => {
+    setAccountToShare({ account, index });
+    setShareModalOpen(true);
+  };
+
+  const closeShareModal = () => {
+    setShareModalOpen(false);
+    setAccountToShare(null);
+  };
+
+  const getAccountDetails = (account: Account, index: number) => {
     const rankInfo = ranks[index];
-    const accountDetails = `🎮 Valorant Account Details 🎮
+    return `🎮 Valorant Account Details 🎮
 
 📋 Riot ID: ${account.riotId}#${account.hashtag}
 👤 Username: ${account.username || 'Not provided'}
@@ -226,28 +330,48 @@ export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, on
 
 --
 Shared via Valorant Account Manager`;
+  };
 
-    if (navigator.share) {
-      // Use Web Share API if available (mobile devices)
-      navigator.share({
-        title: `Valorant Account: ${account.riotId}#${account.hashtag}`,
-        text: accountDetails,
-      }).catch(err => console.log('Error sharing:', err));
-    } else {
-      // Fallback: Copy to clipboard
-      navigator.clipboard.writeText(accountDetails).then(() => {
-        alert('Account details copied to clipboard! You can now paste it in WhatsApp, Discord, or any other app.');
-      }).catch(() => {
-        // If clipboard fails, show a modal with the text
-        const textArea = document.createElement('textarea');
-        textArea.value = accountDetails;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Account details copied to clipboard! You can now paste it in WhatsApp, Discord, or any other app.');
-      });
+  const shareToApp = (app: string) => {
+    if (!accountToShare) return;
+    
+    const text = getAccountDetails(accountToShare.account, accountToShare.index);
+    const encodedText = encodeURIComponent(text);
+    
+    const shareUrls: { [key: string]: string } = {
+      whatsapp: `https://api.whatsapp.com/send?text=${encodedText}`,
+      telegram: `https://t.me/share/url?text=${encodedText}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}`,
+      discord: `https://discord.com/channels/@me`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedText}`,
+      email: `mailto:?subject=Valorant Account Details&body=${encodedText}`,
+    };
+
+    if (shareUrls[app]) {
+      window.open(shareUrls[app], '_blank');
+      closeShareModal();
     }
+  };
+
+  const copyAccountDetailsToClipboard = () => {
+    if (!accountToShare) return;
+    
+    const text = getAccountDetails(accountToShare.account, accountToShare.index);
+    
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Account details copied to clipboard!');
+      closeShareModal();
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Account details copied to clipboard!');
+      closeShareModal();
+    });
   };
 
   const sortedAccounts = useMemo(() => {
@@ -353,16 +477,17 @@ Shared via Valorant Account Manager`;
   };
 
   return (
-    <TableContainer>
-      <Table>
-        <thead>
-          <tr>
-            <TableHeader onClick={() => requestSort('riotId')} style={{ width: '15%' }}>Riot ID</TableHeader>
-            <TableHeader onClick={() => requestSort('username')} style={{ width: '12%' }}>Username</TableHeader>
-            <TableHeader style={{ width: '12%' }}>Password</TableHeader>
-            <TableHeader onClick={() => requestSort('hasSkins')} style={{ width: '8%', textAlign: 'center' }}>Skins</TableHeader>
-            <TableHeader onClick={() => requestSort('rank')} style={{ width: '35%' }}>
-              <RankHeaderContent>
+    <>
+      <TableContainer>
+        <Table>
+          <thead>
+            <tr>
+              <TableHeader onClick={() => requestSort('riotId')} style={{ width: '15%' }}>Riot ID</TableHeader>
+              <TableHeader onClick={() => requestSort('username')} style={{ width: '12%' }}>Username</TableHeader>
+              <TableHeader style={{ width: '12%' }}>Password</TableHeader>
+              <TableHeader onClick={() => requestSort('hasSkins')} style={{ width: '8%', textAlign: 'center' }}>Skins</TableHeader>
+              <TableHeader onClick={() => requestSort('rank')} style={{ width: '35%' }}>
+                <RankHeaderContent>
                 <span>Rank</span>
                 <Button onClick={(e) => { e.stopPropagation(); handleFetchAllRanks(); }} disabled={isFetchingAll}>
                   {isFetchingAll ? <Spinner /> : 'Refresh All'}
@@ -438,14 +563,62 @@ Shared via Valorant Account Manager`;
                     <Button onClick={() => handleFetchRank(globalIndex, account)} disabled={isLoading}>
                       {isLoading ? <Spinner /> : 'Refresh'}
                     </Button>
-                    <Button onClick={() => handleShareAccount(account, globalIndex)} variant="secondary">Share</Button>
+                    <ShareIcon onClick={() => openShareModal(account, globalIndex)} title="Share account details">
+                      ↗
+                    </ShareIcon>
                   </ActionButtonContainer>
                 </TableCell>
               </TableRow>
             );
           })}
-        </tbody>
-      </Table>
-    </TableContainer>
+          </tbody>
+        </Table>
+      </TableContainer>
+      
+      {shareModalOpen && accountToShare && (
+        <ShareModal $isOpen={shareModalOpen} onClick={closeShareModal}>
+          <ShareModalContent onClick={(e) => e.stopPropagation()}>
+            <ShareModalHeader>
+              <h3>Share Account Details</h3>
+              <CloseButton onClick={closeShareModal}>×</CloseButton>
+            </ShareModalHeader>
+            
+            <p>Share {accountToShare.account.riotId}#{accountToShare.account.hashtag} details via:</p>
+            
+            <ShareOptionsGrid>
+              <ShareOption onClick={() => shareToApp('whatsapp')}>
+                <ShareOptionIcon style={{ backgroundColor: '#25D366' }}>📱</ShareOptionIcon>
+                <ShareOptionLabel>WhatsApp</ShareOptionLabel>
+              </ShareOption>
+              
+              <ShareOption onClick={() => shareToApp('telegram')}>
+                <ShareOptionIcon style={{ backgroundColor: '#0088cc' }}>✈️</ShareOptionIcon>
+                <ShareOptionLabel>Telegram</ShareOptionLabel>
+              </ShareOption>
+              
+              <ShareOption onClick={() => shareToApp('discord')}>
+                <ShareOptionIcon style={{ backgroundColor: '#7289da' }}>💬</ShareOptionIcon>
+                <ShareOptionLabel>Discord</ShareOptionLabel>
+              </ShareOption>
+              
+              <ShareOption onClick={() => shareToApp('twitter')}>
+                <ShareOptionIcon style={{ backgroundColor: '#1da1f2' }}>🐦</ShareOptionIcon>
+                <ShareOptionLabel>Twitter</ShareOptionLabel>
+              </ShareOption>
+              
+              <ShareOption onClick={() => shareToApp('email')}>
+                <ShareOptionIcon style={{ backgroundColor: '#ea4335' }}>📧</ShareOptionIcon>
+                <ShareOptionLabel>Email</ShareOptionLabel>
+              </ShareOption>
+              
+              <ShareOption onClick={copyAccountDetailsToClipboard}>
+                <ShareOptionIcon style={{ backgroundColor: '#6c757d' }}>📋</ShareOptionIcon>
+                <ShareOptionLabel>Copy</ShareOptionLabel>
+              </ShareOption>
+            </ShareOptionsGrid>
+          </ShareModalContent>
+        </ShareModal>
+      )}
+    </>
   );
 };

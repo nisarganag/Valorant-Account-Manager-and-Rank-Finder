@@ -8,6 +8,7 @@ import { AccountTable } from './components/AccountTable';
 import { SearchBar } from './components/SearchBar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { FileUpload } from './components/FileUpload';
+import { UpdateManager } from './components';
 import { EncryptionService } from './utils/encryption';
 import type { Account } from './types';
 import './App.css';
@@ -120,6 +121,33 @@ const HeaderControls = styled.div`
   display: flex;
   align-items: center;
   gap: ${props => props.theme.sizes.spacing.md};
+`;
+
+const UpdateButton = styled.button`
+  background: transparent;
+  color: ${props => props.theme.colors.text.secondary};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  padding: ${props => props.theme.sizes.spacing.xs} ${props => props.theme.sizes.spacing.sm};
+  font-size: 16px;
+  cursor: pointer;
+  transition: ${props => props.theme.effects.transition};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+
+  &:hover {
+    background: ${props => props.theme.colors.surface};
+    color: ${props => props.theme.colors.text.primary};
+    border-color: ${props => props.theme.colors.primary};
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 const ImportButton = styled.button`
@@ -370,6 +398,16 @@ function AppContent() {
     setEditingAccountIndex(null);
   };
 
+  const handleCheckForUpdates = async () => {
+    if (!window.electronAPI) return;
+    
+    try {
+      await window.electronAPI.checkForUpdates();
+    } catch (error) {
+      console.error('Failed to check for updates:', error);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyle />
@@ -382,6 +420,9 @@ function AppContent() {
               <Subtitle>Secure account management and rank tracking</Subtitle>
             </HeaderContent>
             <HeaderControls>
+              <UpdateButton onClick={handleCheckForUpdates} title="Check for updates">
+                🔄
+              </UpdateButton>
               <ThemeToggle />
             </HeaderControls>
           </Header>
@@ -456,6 +497,7 @@ function AppContent() {
 
         </Container>
       </AppContainer>
+      <UpdateManager />
     </ThemeProvider>
   );
 }
