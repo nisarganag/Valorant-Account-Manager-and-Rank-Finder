@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { ThemeProvider as CustomThemeProvider } from './contexts/ThemeContext';
 import { useTheme } from './contexts/useTheme';
@@ -310,6 +310,9 @@ function AppContent() {
   const [showStatistics, setShowStatistics] = useState(false);
   const [ranks, setRanks] = useState<{ [key: number]: RankInfo }>({});
   const [loadingRanks, setLoadingRanks] = useState<Set<number>>(new Set());
+  const [currentlyFetchingIndex, setCurrentlyFetchingIndex] = useState<number | null>(null);
+  const [isFetchingAll, setIsFetchingAll] = useState(false);
+  const shouldStopFetchingRef = useRef(false);
 
   const loadAccounts = useCallback(async () => {
     if (!masterPassword) return;
@@ -373,6 +376,66 @@ function AppContent() {
       });
     }
   }, [loadingRanks]);
+
+  // Auto-fetch all ranks when accounts are loaded on app start
+  useEffect(() => {
+    const autoFetchAllRanks = async () => {
+      if (accounts.length === 0) return;
+      
+      shouldStopFetchingRef.current = false;
+      setIsFetchingAll(true);
+      
+      // Fetch ranks for all accounts with delays between requests
+      for (let i = 0; i < accounts.length; i++) {
+        if (shouldStopFetchingRef.current) {
+          console.log('Rank fetching stopped by user');
+          break;
+        }
+        
+        const account = accounts[i];
+        if (account.riotId && account.hashtag) {
+          setCurrentlyFetchingIndex(i);
+          await fetchRankForAccount(i, account);
+          // Add delay between requests to avoid overwhelming the API
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      setIsFetchingAll(false);
+      setCurrentlyFetchingIndex(null);
+    };
+
+    autoFetchAllRanks();
+  }, [accounts.length]); // Only trigger when accounts.length changes (i.e., when accounts are first loaded)
+
+  const handleStopFetching = useCallback(() => {
+    shouldStopFetchingRef.current = true;
+    setIsFetchingAll(false);
+    setCurrentlyFetchingIndex(null);
+  }, []);
+
+  const handleRefreshAllRanks = useCallback(async () => {
+    shouldStopFetchingRef.current = false;
+    setIsFetchingAll(true);
+    
+    for (let i = 0; i < accounts.length; i++) {
+      if (shouldStopFetchingRef.current) {
+        console.log('Rank fetching stopped by user');
+        break;
+      }
+      
+      const account = accounts[i];
+      if (account.riotId && account.hashtag) {
+        setCurrentlyFetchingIndex(i);
+        await fetchRankForAccount(i, account);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    setIsFetchingAll(false);
+    setCurrentlyFetchingIndex(null);
+  }, [accounts, fetchRankForAccount]);
+
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
@@ -617,6 +680,9 @@ function AppContent() {
                   ranks={ranks}
                   loadingRanks={loadingRanks}
                   onRefreshRank={fetchRankForAccount}
+                  currentlyFetchingIndex={currentlyFetchingIndex}
+                  isFetchingAll={isFetchingAll}
+                  onStopFetching={handleStopFetching}
                 />
               ) : (
                 <AccountTable
@@ -629,6 +695,10 @@ function AppContent() {
                   ranks={ranks}
                   loadingRanks={loadingRanks}
                   onRefreshRank={fetchRankForAccount}
+                  onRefreshAll={handleRefreshAllRanks}
+                  currentlyFetchingIndex={currentlyFetchingIndex}
+                  isFetchingAll={isFetchingAll}
+                  onStopFetching={handleStopFetching}
                 />
               )}
             </MainContent>

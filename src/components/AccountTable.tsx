@@ -12,6 +12,10 @@ interface AccountTableProps {
   ranks: { [key: number]: RankInfo };
   loadingRanks: Set<number>;
   onRefreshRank: (index: number, account: Account) => Promise<void>;
+  onRefreshAll: () => Promise<void>;
+  currentlyFetchingIndex: number | null;
+  isFetchingAll: boolean;
+  onStopFetching: () => void;
 }
 
 interface RankInfo {
@@ -308,11 +312,13 @@ export const AccountTable: React.FC<AccountTableProps> = ({
   requestSort,
   ranks,
   loadingRanks,
-  onRefreshRank
+  onRefreshRank,
+  onRefreshAll,
+  currentlyFetchingIndex,
+  isFetchingAll,
+  onStopFetching
 }) => {
   const theme = useTheme();
-  const [isFetchingAll, setIsFetchingAll] = useState(false);
-  const [currentlyFetchingIndex, setCurrentlyFetchingIndex] = useState<number | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [accountToShare, setAccountToShare] = useState<{ account: Account; index: number } | null>(null);
@@ -426,21 +432,6 @@ Shared via Valorant Account Manager`;
     return sortableItems;
   }, [accounts, ranks, sortConfig]);
 
-  const handleFetchAllRanks = async () => {
-    setIsFetchingAll(true);
-    for (let i = 0; i < accounts.length; i++) {
-      const account = accounts[i];
-      if (account.riotId && account.hashtag) {
-        setCurrentlyFetchingIndex(i);
-        await onRefreshRank(i, account);
-        // Add small delay between requests
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-    setIsFetchingAll(false);
-    setCurrentlyFetchingIndex(null);
-  };
-
   const togglePasswordVisibility = (index: number) => {
     setVisiblePasswords(prev => ({ ...prev, [index]: !prev[index] }));
   };
@@ -464,9 +455,15 @@ Shared via Valorant Account Manager`;
               <TableHeader onClick={() => requestSort('rank')} style={{ width: '28%' }}>
                 <RankHeaderContent>
                 <span>Rank</span>
-                <Button onClick={(e) => { e.stopPropagation(); handleFetchAllRanks(); }} disabled={isFetchingAll}>
-                  {isFetchingAll ? <Spinner /> : 'Refresh All'}
-                </Button>
+                {isFetchingAll ? (
+                  <Button onClick={(e) => { e.stopPropagation(); onStopFetching(); }} variant="danger">
+                    Stop
+                  </Button>
+                ) : (
+                  <Button onClick={(e) => { e.stopPropagation(); onRefreshAll(); }}>
+                    Refresh All
+                  </Button>
+                )}
               </RankHeaderContent>
             </TableHeader>
             <TableHeader style={{ width: '18%' }}>Notes</TableHeader>

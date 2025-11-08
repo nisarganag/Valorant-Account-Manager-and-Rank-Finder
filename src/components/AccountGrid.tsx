@@ -10,6 +10,9 @@ interface AccountGridProps {
   ranks: { [key: number]: RankInfo };
   loadingRanks: Set<number>;
   onRefreshRank: (index: number, account: Account) => Promise<void>;
+  currentlyFetchingIndex: number | null;
+  isFetchingAll: boolean;
+  onStopFetching: () => void;
 }
 
 interface RankInfo {
@@ -221,7 +224,9 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
   onEdit, 
   onToggleSkins,
   ranks,
-  loadingRanks}) => {
+  loadingRanks,
+  currentlyFetchingIndex
+}) => {
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
 
   const togglePasswordVisibility = (index: number) => {
@@ -238,9 +243,10 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
         const rankInfo = ranks[index];
         const isLoading = loadingRanks.has(index);
         const isPasswordVisible = visiblePasswords[index];
+        const isCurrentlyFetching = currentlyFetchingIndex === index;
 
         return (
-          <AccountCard key={account.id}>
+          <AccountCard key={account.id} style={{ background: isCurrentlyFetching ? 'rgba(255, 70, 85, 0.1)' : undefined }}>
             <CardHeader>
               <AccountInfo>
                 <RiotId>{account.riotId}#{account.hashtag}</RiotId>
