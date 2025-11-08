@@ -194,6 +194,25 @@ const Spinner = styled.div`
   animation: ${rotate} 1s linear infinite;
 `;
 
+const PasswordContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.sizes.spacing.xs};
+`;
+
+const EyeIcon = styled.span`
+  cursor: pointer;
+  font-size: 1.2em;
+  display: inline-block;
+  user-select: none;
+  transition: all 0.2s ease-in-out;
+  
+  &:hover {
+    transform: scale(1.2);
+    color: ${props => props.theme.colors.primary};
+  }
+`;
+
 export const AccountGrid: React.FC<AccountGridProps> = ({ 
   accounts, 
   onDelete, 
@@ -202,6 +221,7 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
 }) => {
   const [ranks, setRanks] = useState<{ [key: number]: RankInfo }>({});
   const [loadingRanks, setLoadingRanks] = useState<Set<number>>(new Set());
+  const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     const fetchAllRanks = async () => {
@@ -245,6 +265,10 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
     fetchAllRanks();
   }, [accounts, ranks]);
 
+  const togglePasswordVisibility = (index: number) => {
+    setVisiblePasswords(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
@@ -254,6 +278,7 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
       {accounts.map((account, index) => {
         const rankInfo = ranks[index];
         const isLoading = loadingRanks.has(index);
+        const isPasswordVisible = visiblePasswords[index];
 
         return (
           <AccountCard key={account.id}>
@@ -291,12 +316,17 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
 
               <InfoRow>
                 <InfoLabel>Password:</InfoLabel>
-                <InfoValue
-                  onClick={() => copyToClipboard(account.password)}
-                  title="Click to copy"
-                >
-                  ••••••••
-                </InfoValue>
+                <PasswordContainer>
+                  <InfoValue
+                    onClick={() => copyToClipboard(account.password)}
+                    title="Click to copy"
+                  >
+                    {isPasswordVisible ? account.password : '••••••••'}
+                  </InfoValue>
+                  <EyeIcon title="Toggle visibility" onClick={() => togglePasswordVisibility(index)}>
+                    👁
+                  </EyeIcon>
+                </PasswordContainer>
               </InfoRow>
 
               <InfoRow>
