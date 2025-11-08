@@ -13,33 +13,31 @@ This guide explains how to prepare files for importing accounts into Valorant Ac
   {
     "riotId": "PlayerName1",
     "hashtag": "1234",
+    "region": "na",
     "username": "player1@email.com",
     "password": "password123",
-    "region": "na",
-    "hasSkins": true,
-    "currentRank": "Diamond 2"
+    "skins": true
   },
   {
     "riotId": "PlayerName2",
     "hashtag": "5678", 
+    "region": "eu",
     "username": "player2@email.com",
     "password": "password456",
-    "region": "eu",
-    "hasSkins": false,
-    "currentRank": "Platinum 1"
+    "skins": false
   }
 ]
 ```
 
-### 📊 CSV Format (.csv)
+### Complete Format (.csv)
 
 **Structure:** Comma-separated values with headers
 
 ```csv
-riotId,hashtag,username,password,region,hasSkins,currentRank
-PlayerName1,1234,player1@email.com,password123,na,true,Diamond 2
-PlayerName2,5678,player2@email.com,password456,eu,false,Platinum 1
-PlayerName3,9999,player3@email.com,password789,ap,true,Gold 3
+riotId,hashtag,region,username,password,skins
+PlayerName1,1234,na,player1@email.com,password123,true
+PlayerName2,5678,eu,player2@email.com,password456,false
+PlayerName3,9999,ap,player3@email.com,password789,true
 ```
 
 ## Field Descriptions
@@ -48,17 +46,16 @@ PlayerName3,9999,player3@email.com,password789,ap,true,Gold 3
 |-------|----------|-------------|----------------|
 | `riotId` | ✅ **Yes** | Riot ID display name | `"PlayerName"` |
 | `hashtag` | ✅ **Yes** | Riot ID tag (without #) | `"1234"` |
+| `region` | ❌ No | Game region | `"na"`, `"eu"`, `"ap"`, `"br"`, `"kr"`, `"latam"` |
 | `username` | ❌ No | Login username/email | `"player@email.com"` |
 | `password` | ❌ No | Account password | `"mypassword123"` |
-| `region` | ❌ No | Game region | `"na"`, `"eu"`, `"ap"`, `"br"`, `"kr"`, `"latam"` |
-| `hasSkins` | ❌ No | Has skins (boolean) | `true`, `false` |
-| `currentRank` | ❌ No | Current competitive rank | `"Diamond 2"`, `"Platinum 1"` |
+| `skins` | ❌ No | Has skins (boolean) | `true`, `false` |
 
 ### Alternative Field Names (Legacy Support)
 
 The importer also accepts these alternative field names:
 - `tag` instead of `hashtag`
-- `username` can be used as `riotId` if `riotId` is missing
+- `hasSkins` instead of `skins`
 
 ## Regional Codes
 
@@ -91,21 +88,21 @@ Valid rank names for the `currentRank` field:
 ```json
 [
   {
-    "riotId": "Player1",
-    "hashtag": "1234"
-  },
-  {
-    "riotId": "Player2", 
-    "hashtag": "5678"
+    "riotId": "SimpleUser",
+    "hashtag": "PLAY",
+    "region": "ap",
+    "username": "simple@email.com",
+    "password": "mypassword789",
+    "skins": false
   }
 ]
 ```
 
 ### Minimal CSV (Required fields only)
 ```csv
-riotId,hashtag
-Player1,1234
-Player2,5678
+riotId,hashtag,region,username,password,skins
+Player1,1234,na,player1@email.com,password123,false
+Player2,5678,eu,player2@email.com,password456,true
 ```
 
 ### Complete JSON (All fields)
@@ -114,20 +111,18 @@ Player2,5678
   {
     "riotId": "ProPlayer",
     "hashtag": "GOAT",
+    "region": "na",
     "username": "proplayer@riot.com",
     "password": "supersecret123",
-    "region": "na",
-    "hasSkins": true,
-    "currentRank": "Radiant"
+    "skins": true
   },
   {
     "riotId": "CasualGamer",
     "hashtag": "FUN",
+    "region": "eu",
     "username": "casual@gmail.com", 
     "password": "password456",
-    "region": "eu",
-    "hasSkins": false,
-    "currentRank": "Gold 2"
+    "skins": false
   }
 ]
 ```

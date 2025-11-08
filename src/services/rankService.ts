@@ -17,19 +17,19 @@ export class RankService {
           if (typeof result.data === 'string') {
             rankString = result.data;
           } else if (result.data && typeof result.data === 'object' && 'current_rank' in result.data) {
-            rankString = result.data.current_rank || 'Fetch Failed';
+            rankString = result.data.current_rank || 'Account Private';
           } else {
-            rankString = 'Fetch Failed';
+            rankString = 'Account Private';
           }
         } else {
-          rankString = 'Fetch Failed';
+          rankString = 'Account Private';
         }
       } else {
         rankString = await this.fetchRankDirectly({ ...account, riotId: cleanRiotId });
       }
 
       if (rankString.includes('Errore nel recupero dei dati')) {
-        rankString = 'Fetch Failed';
+        rankString = 'Account Private';
       }
 
       const icon = this.getRankIcon(rankString);
@@ -39,7 +39,7 @@ export class RankService {
 
     } catch (error) {
       console.error('Error fetching rank:', error);
-      return { rank: 'Fetch Failed', icon: '', color: '#FF0000' };
+      return { rank: 'Account Private', icon: '', color: '#FF0000' };
     }
   }
 
@@ -70,13 +70,13 @@ export class RankService {
           // Handle text response
           const responseText = response.data;
           if (responseText.includes('Errore nel recupero dei dati')) {
-            return 'Fetch Failed';
+            return 'Account Private';
           }
           return responseText;
         }
       }
-      
-      return 'Fetch Failed';
+
+      return 'Account Private';
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
         console.error(`Error fetching rank - Status: ${(error as { response: { status: number } }).response.status}, URL: ${this.API_BASE_URL}/${encodeURIComponent(account.riotId)}/${encodeURIComponent(account.hashtag)}/${account.region}`);

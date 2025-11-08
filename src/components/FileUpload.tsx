@@ -20,8 +20,9 @@ const UploadContainer = styled.div`
 const UploadHeader = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: ${props => props.theme.sizes.spacing.md};
-  margin-bottom: ${props => props.theme.sizes.spacing.md};
+  margin-bottom: ${props => props.theme.sizes.spacing.xl};
 `;
 
 const UploadTitle = styled.h3`
@@ -167,6 +168,127 @@ const CancelButton = styled.button`
   }
 `;
 
+const HelpButton = styled.button`
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: ${props => props.theme.effects.transition};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+`;
+
+const HelpModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: ${props => props.theme.sizes.spacing.lg};
+`;
+
+const HelpModalContent = styled.div`
+  background: ${props => props.theme.colors.surface};
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  padding: ${props => props.theme.sizes.spacing.xl};
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  animation: ${fadeIn} 0.3s ease-out;
+`;
+
+const HelpModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: ${props => props.theme.sizes.spacing.lg};
+  padding-bottom: ${props => props.theme.sizes.spacing.md};
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+`;
+
+const HelpModalTitle = styled.h2`
+  color: ${props => props.theme.colors.text.primary};
+  margin: 0;
+  font-size: ${props => props.theme.sizes.fontSize.xlarge};
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: ${props => props.theme.colors.text.secondary};
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: ${props => props.theme.effects.transition};
+  
+  &:hover {
+    background: ${props => props.theme.colors.border};
+    color: ${props => props.theme.colors.text.primary};
+  }
+`;
+
+const HelpSection = styled.div`
+  margin-bottom: ${props => props.theme.sizes.spacing.lg};
+`;
+
+const HelpSectionTitle = styled.h3`
+  color: ${props => props.theme.colors.primary};
+  margin-bottom: ${props => props.theme.sizes.spacing.md};
+  font-size: ${props => props.theme.sizes.fontSize.large};
+`;
+
+const CodeBlock = styled.pre`
+  background: ${props => props.theme.colors.background};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  padding: ${props => props.theme.sizes.spacing.md};
+  overflow-x: auto;
+  font-size: ${props => props.theme.sizes.fontSize.small};
+  color: ${props => props.theme.colors.text.primary};
+  margin: ${props => props.theme.sizes.spacing.sm} 0;
+`;
+
+const HelpText = styled.p`
+  color: ${props => props.theme.colors.text.secondary};
+  line-height: 1.6;
+  margin-bottom: ${props => props.theme.sizes.spacing.md};
+`;
+
+const RequiredBadge = styled.span`
+  background: ${props => props.theme.colors.error};
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: ${props => props.theme.sizes.fontSize.small};
+  font-weight: bold;
+  margin-left: ${props => props.theme.sizes.spacing.sm};
+`;
+
+
+
 interface FileUploadProps {
   onAccountsImported: (accounts: Account[]) => void;
   isVisible: boolean;
@@ -183,6 +305,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
+  const [showHelp, setShowHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = () => {
@@ -191,6 +314,51 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setSuccess('');
     setIsProcessing(false);
   };
+
+  const handleShowHelp = () => {
+    setShowHelp(true);
+  };
+
+  const handleCloseHelp = () => {
+    setShowHelp(false);
+  };
+
+  const jsonExampleMinimal = `[
+  {
+    "riotId": "PlayerName",
+    "hashtag": "1234",
+    "region": "na",
+    "username": "player@email.com",
+    "password": "your_password",
+    "skins": false
+  }
+]`;
+
+  const jsonExampleComplete = `[
+  {
+    "riotId": "ProPlayer",
+    "hashtag": "GOAT",
+    "region": "na",
+    "username": "proplayer@riot.com",
+    "password": "supersecret123",
+    "skins": true
+  },
+  {
+    "riotId": "CasualGamer",
+    "hashtag": "FUN",
+    "region": "eu",
+    "username": "casual@gmail.com",
+    "password": "password456",
+    "skins": false
+  }
+]`;
+
+  const csvExampleMinimal = `riotId,hashtag,region,username,password,skins
+PlayerName,1234,na,player@email.com,your_password,false`;
+
+  const csvExampleComplete = `riotId,hashtag,region,username,password,skins
+ProPlayer,GOAT,na,proplayer@riot.com,supersecret123,true
+CasualGamer,FUN,eu,casual@gmail.com,password456,false`;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -266,7 +434,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             username?: string;
             password?: string;
             region?: string;
-            hasSkins?: boolean;
+            skins?: boolean;
+            hasSkins?: boolean; // Legacy support
             currentRank?: string;
             tag?: string;
           }, index: number) => ({
@@ -276,7 +445,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             username: acc.username || '',
             password: acc.password || '',
             region: (acc.region || 'na') as Account['region'],
-            hasSkins: acc.hasSkins || false,
+            hasSkins: acc.skins || acc.hasSkins || false,
             currentRank: acc.currentRank || 'Unranked',
             lastRefreshed: new Date().toISOString(),
             passwordVisible: false
@@ -317,6 +486,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <UploadHeader>
         <UploadIcon>📁</UploadIcon>
         <UploadTitle>Import Accounts from File</UploadTitle>
+        <HelpButton onClick={handleShowHelp} title="View format guide and examples">
+          ?
+        </HelpButton>
       </UploadHeader>
       
       {!selectedFile && !isProcessing && (
@@ -333,12 +505,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </DropZoneText>
           <DropZoneSubtext>
             Supported formats: .json, .csv files containing account data<br/>
-            <strong>Required fields:</strong> riotId, hashtag | 
-            <a href="https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/blob/main/IMPORT_GUIDE.md" 
-               target="_blank" 
-               style={{color: 'inherit', textDecoration: 'underline'}}>
-              📖 See format guide & examples
-            </a>
+            <strong>Required fields:</strong> riotId, hashtag, region, username, password, skins | 
+            Click the <strong>?</strong> button above for format examples and guide
           </DropZoneSubtext>
           <HiddenInput
             ref={fileInputRef}
@@ -377,6 +545,75 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
       {success && <SuccessMessage>{success}</SuccessMessage>}
+      
+      {showHelp && (
+        <HelpModalOverlay onClick={handleCloseHelp}>
+          <HelpModalContent onClick={(e) => e.stopPropagation()}>
+            <HelpModalHeader>
+              <HelpModalTitle>Import Format Guide</HelpModalTitle>
+              <CloseButton onClick={handleCloseHelp}>×</CloseButton>
+            </HelpModalHeader>
+            
+            <HelpSection>
+              <HelpSectionTitle>📋 Required Fields</HelpSectionTitle>
+              <HelpText>
+                • <strong>riotId</strong><RequiredBadge>Required</RequiredBadge> - Valorant username (without #tag)
+              </HelpText>
+              <HelpText>
+                • <strong>hashtag</strong><RequiredBadge>Required</RequiredBadge> - The numbers after # in your Riot ID
+              </HelpText>
+              <HelpText>
+                • <strong>region</strong><RequiredBadge>Required</RequiredBadge> - Server region (na, eu, ap, br, kr)
+              </HelpText>
+              <HelpText>
+                • <strong>username</strong><RequiredBadge>Required</RequiredBadge> - Account login email/username
+              </HelpText>
+              <HelpText>
+                • <strong>password</strong><RequiredBadge>Required</RequiredBadge> - Account password (will be encrypted)
+              </HelpText>
+              <HelpText>
+                • <strong>skins</strong><RequiredBadge>Required</RequiredBadge> - Whether account has skins (true/false)
+              </HelpText>
+            </HelpSection>
+
+            <HelpSection>
+              <HelpSectionTitle>📄 JSON Format - Minimal Example</HelpSectionTitle>
+              <CodeBlock>{jsonExampleMinimal}</CodeBlock>
+            </HelpSection>
+
+            <HelpSection>
+              <HelpSectionTitle>📄 JSON Format - Complete Example</HelpSectionTitle>
+              <CodeBlock>{jsonExampleComplete}</CodeBlock>
+            </HelpSection>
+
+            <HelpSection>
+              <HelpSectionTitle>📊 CSV Format - Minimal Example</HelpSectionTitle>
+              <CodeBlock>{csvExampleMinimal}</CodeBlock>
+            </HelpSection>
+
+            <HelpSection>
+              <HelpSectionTitle>📊 CSV Format - Complete Example</HelpSectionTitle>
+              <CodeBlock>{csvExampleComplete}</CodeBlock>
+            </HelpSection>
+
+            <HelpSection>
+              <HelpSectionTitle>⚠️ Important Notes</HelpSectionTitle>
+              <HelpText>
+                • Passwords are automatically encrypted and stored securely
+              </HelpText>
+              <HelpText>
+                • Riot IDs should not include the # symbol (use separate hashtag field)
+              </HelpText>
+              <HelpText>
+                • CSV files must have headers in the first row
+              </HelpText>
+              <HelpText>
+                • Invalid entries will be skipped with error messages
+              </HelpText>
+            </HelpSection>
+          </HelpModalContent>
+        </HelpModalOverlay>
+      )}
     </UploadContainer>
   );
 };

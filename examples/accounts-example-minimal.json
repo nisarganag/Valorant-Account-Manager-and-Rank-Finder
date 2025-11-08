@@ -1,14 +1,26 @@
 [
   {
     "riotId": "MinimalPlayer1",
-    "hashtag": "1234"
+    "hashtag": "1234",
+    "region": "na",
+    "username": "player1@email.com",
+    "password": "password123",
+    "skins": false
   },
   {
     "riotId": "MinimalPlayer2", 
-    "hashtag": "5678"
+    "hashtag": "5678",
+    "region": "eu",
+    "username": "player2@email.com",
+    "password": "password456",
+    "skins": true
   },
   {
     "riotId": "MinimalPlayer3",
-    "hashtag": "9999"
+    "hashtag": "9999",
+    "region": "ap",
+    "username": "player3@email.com",
+    "password": "password789",
+    "skins": false
   }
 ]

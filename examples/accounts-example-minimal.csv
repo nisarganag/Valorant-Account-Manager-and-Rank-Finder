@@ -1,5 +1,5 @@
-riotId,hashtag
-MinimalPlayer1,1234
-MinimalPlayer2,5678
-MinimalPlayer3,9999
-MinimalPlayer4,0000
+riotId,hashtag,region,username,password,skins
+MinimalPlayer1,1234,na,player1@email.com,password123,false
+MinimalPlayer2,5678,eu,player2@email.com,password456,true
+MinimalPlayer3,9999,ap,player3@email.com,password789,false
+MinimalPlayer4,0000,br,player4@email.com,password000,true
