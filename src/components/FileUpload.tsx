@@ -332,7 +332,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             {error ? '❌ Error selecting file' : '📎 Drop your file here or click to browse'}
           </DropZoneText>
           <DropZoneSubtext>
-            Supported formats: .json, .csv files containing account data
+            Supported formats: .json, .csv files containing account data<br/>
+            <strong>Required fields:</strong> riotId, hashtag | 
+            <a href="https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/blob/main/IMPORT_GUIDE.md" 
+               target="_blank" 
+               style={{color: 'inherit', textDecoration: 'underline'}}>
+              📖 See format guide & examples
+            </a>
           </DropZoneSubtext>
           <HiddenInput
             ref={fileInputRef}

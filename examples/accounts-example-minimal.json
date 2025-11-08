@@ -1,0 +1,14 @@
+[
+  {
+    "riotId": "MinimalPlayer1",
+    "hashtag": "1234"
+  },
+  {
+    "riotId": "MinimalPlayer2", 
+    "hashtag": "5678"
+  },
+  {
+    "riotId": "MinimalPlayer3",
+    "hashtag": "9999"
+  }
+]

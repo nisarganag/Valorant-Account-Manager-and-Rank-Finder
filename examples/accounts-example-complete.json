@@ -1,0 +1,38 @@
+[
+  {
+    "riotId": "ProGamer",
+    "hashtag": "1337",
+    "username": "progamer@email.com",
+    "password": "mysecretpassword",
+    "region": "na",
+    "hasSkins": true,
+    "currentRank": "Diamond 2"
+  },
+  {
+    "riotId": "CasualPlayer",
+    "hashtag": "5678",
+    "username": "casual@gmail.com",
+    "password": "password123",
+    "region": "eu", 
+    "hasSkins": false,
+    "currentRank": "Platinum 1"
+  },
+  {
+    "riotId": "SkinCollector",
+    "hashtag": "RICH",
+    "username": "collector@valorant.com",
+    "password": "iloveValorant2024",
+    "region": "ap",
+    "hasSkins": true,
+    "currentRank": "Gold 3"
+  },
+  {
+    "riotId": "NewPlayer",
+    "hashtag": "0001",
+    "username": "newbie@riot.com",
+    "password": "firsttime",
+    "region": "br",
+    "hasSkins": false,
+    "currentRank": "Iron 2"
+  }
+]
