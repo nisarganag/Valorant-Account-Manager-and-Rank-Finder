@@ -1,7 +1,10 @@
 export { AccountForm } from './AccountForm';
 export { AccountTable } from './AccountTable';
+export { AccountGrid } from './AccountGrid';
+export { AccountStatistics } from './AccountStatistics';
 export { MasterPasswordDialog } from './MasterPasswordDialog';
 export { SearchBar } from './SearchBar';
 export { ThemeToggle } from './ThemeToggle';
+export { ViewToggle } from './ViewToggle';
 export { FileUpload } from './FileUpload';
 export { default as UpdateManager } from './UpdateManager';

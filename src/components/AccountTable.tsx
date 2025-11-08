@@ -398,8 +398,17 @@ Shared via Valorant Account Manager`;
             if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
             return 0;
           }
-          if (a[key] < b[key]) return sortConfig.direction === 'ascending' ? -1 : 1;
-          if (a[key] > b[key]) return sortConfig.direction === 'ascending' ? 1 : -1;
+          
+          const aValue = a[key];
+          const bValue = b[key];
+          
+          // Handle undefined values
+          if (aValue === undefined && bValue === undefined) return 0;
+          if (aValue === undefined) return sortConfig.direction === 'ascending' ? 1 : -1;
+          if (bValue === undefined) return sortConfig.direction === 'ascending' ? -1 : 1;
+          
+          if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+          if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
           return 0;
         }
       });
@@ -482,11 +491,11 @@ Shared via Valorant Account Manager`;
         <Table>
           <thead>
             <tr>
-              <TableHeader onClick={() => requestSort('riotId')} style={{ width: '15%' }}>Riot ID</TableHeader>
-              <TableHeader onClick={() => requestSort('username')} style={{ width: '12%' }}>Username</TableHeader>
-              <TableHeader style={{ width: '12%' }}>Password</TableHeader>
-              <TableHeader onClick={() => requestSort('hasSkins')} style={{ width: '8%', textAlign: 'center' }}>Skins</TableHeader>
-              <TableHeader onClick={() => requestSort('rank')} style={{ width: '35%' }}>
+              <TableHeader onClick={() => requestSort('riotId')} style={{ width: '12%' }}>Riot ID</TableHeader>
+              <TableHeader onClick={() => requestSort('username')} style={{ width: '10%' }}>Username</TableHeader>
+              <TableHeader style={{ width: '10%' }}>Password</TableHeader>
+              <TableHeader onClick={() => requestSort('hasSkins')} style={{ width: '6%', textAlign: 'center' }}>Skins</TableHeader>
+              <TableHeader onClick={() => requestSort('rank')} style={{ width: '28%' }}>
                 <RankHeaderContent>
                 <span>Rank</span>
                 <Button onClick={(e) => { e.stopPropagation(); handleFetchAllRanks(); }} disabled={isFetchingAll}>
@@ -494,7 +503,8 @@ Shared via Valorant Account Manager`;
                 </Button>
               </RankHeaderContent>
             </TableHeader>
-            <TableHeader style={{ width: '18%' }}>Actions</TableHeader>
+            <TableHeader style={{ width: '18%' }}>Notes</TableHeader>
+            <TableHeader style={{ width: '16%' }}>Actions</TableHeader>
           </tr>
         </thead>
         <tbody>
@@ -556,6 +566,15 @@ Shared via Valorant Account Manager`;
                     )}
                   </RankContent>
                 </RankCell>
+                <TableCell style={{ 
+                  maxWidth: '150px', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: '14px'
+                }} title={account.notes}>
+                  {account.notes || '-'}
+                </TableCell>
                 <TableCell>
                   <ActionButtonContainer>
                     <Button onClick={() => onEdit(account, globalIndex)}>Edit</Button>

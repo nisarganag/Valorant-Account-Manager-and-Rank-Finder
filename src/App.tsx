@@ -5,8 +5,11 @@ import { useTheme } from './contexts/useTheme';
 import { MasterPasswordDialog } from './components/MasterPasswordDialog';
 import { AccountForm } from './components/AccountForm';
 import { AccountTable } from './components/AccountTable';
+import { AccountGrid } from './components/AccountGrid';
+import { AccountStatistics } from './components/AccountStatistics';
 import { SearchBar } from './components/SearchBar';
 import { ThemeToggle } from './components/ThemeToggle';
+import { ViewToggle } from './components/ViewToggle';
 import { FileUpload } from './components/FileUpload';
 import { UpdateManager } from './components';
 import { EncryptionService } from './utils/encryption';
@@ -296,6 +299,8 @@ function AppContent() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [viewLayout, setViewLayout] = useState<'list' | 'grid'>('list');
+  const [showStatistics, setShowStatistics] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     if (!masterPassword) return;
@@ -352,10 +357,18 @@ function AppContent() {
     if (sortConfig !== null && sortConfig.key !== 'rank') {
       sortableAccounts.sort((a, b) => {
         const key = sortConfig.key as keyof Account;
-        if (a[key] < b[key]) {
+        const aValue = a[key];
+        const bValue = b[key];
+        
+        // Handle undefined values
+        if (aValue === undefined && bValue === undefined) return 0;
+        if (aValue === undefined) return sortConfig.direction === 'ascending' ? 1 : -1;
+        if (bValue === undefined) return sortConfig.direction === 'ascending' ? -1 : 1;
+        
+        if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
-        if (a[key] > b[key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === 'ascending' ? 1 : -1;
         }
         return 0;
@@ -531,9 +544,18 @@ function AppContent() {
                 <SearchBarContainer>
                   <SearchBar searchTerm={searchTerm} onSearchTermChange={setSearchTerm} />
                 </SearchBarContainer>
-                <ImportButton onClick={() => setShowFileUpload(!showFileUpload)}>
-                  📁 Import Accounts
-                </ImportButton>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <ViewToggle 
+                    currentView={viewLayout}
+                    onViewChange={setViewLayout}
+                  />
+                  <ImportButton onClick={() => setShowFileUpload(!showFileUpload)}>
+                    📁 Import Accounts
+                  </ImportButton>
+                  <ImportButton onClick={() => setShowStatistics(!showStatistics)}>
+                    📊 Statistics
+                  </ImportButton>
+                </div>
               </ControlsContainer>
 
               {showFileUpload && (
@@ -544,10 +566,25 @@ function AppContent() {
                 />
               )}
 
+              {showStatistics && (
+                <AccountStatistics
+                  accounts={accounts}
+                  isVisible={showStatistics}
+                  onClose={() => setShowStatistics(false)}
+                />
+              )}
+
               {isLoading ? (
                 <LoadingContainer>
                   Loading accounts...
                 </LoadingContainer>
+              ) : viewLayout === 'grid' ? (
+                <AccountGrid
+                  accounts={sortedAccounts}
+                  onEdit={handleEditAccount}
+                  onDelete={handleDeleteAccount}
+                  onToggleSkins={handleToggleSkins}
+                />
               ) : (
                 <AccountTable
                   accounts={sortedAccounts}

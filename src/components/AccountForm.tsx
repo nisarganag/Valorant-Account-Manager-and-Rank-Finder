@@ -90,6 +90,30 @@ const Select = styled.select`
   }
 `;
 
+const TextArea = styled.textarea`
+  padding: ${props => props.theme.sizes.spacing.sm} ${props => props.theme.sizes.spacing.md};
+  border: 1px solid ${props => props.theme.colors.border}60;
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  background: ${props => props.theme.colors.background}80;
+  color: ${props => props.theme.colors.text.primary};
+  font-family: ${props => props.theme.fonts.primary};
+  font-size: ${props => props.theme.sizes.fontSize.small};
+  resize: vertical;
+  min-height: 60px;
+  max-height: 120px;
+  transition: ${props => props.theme.effects.transition};
+
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.primary};
+    background: ${props => props.theme.colors.background};
+  }
+
+  &::placeholder {
+    color: ${props => props.theme.colors.text.secondary}80;
+  }
+`;
+
 const ButtonContainer = styled.div`
   display: flex;
   gap: ${props => props.theme.sizes.spacing.sm};
@@ -122,6 +146,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onSubmit, initialData 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [region, setRegion] = useState<Account['region']>('ap');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (initialData) {
@@ -129,12 +154,14 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onSubmit, initialData 
       setUsername(initialData.username);
       setPassword(initialData.password);
       setRegion(initialData.region);
+      setNotes(initialData.notes || '');
     } else {
       // Reset form for adding new account
       setRiotIdWithTag('');
       setUsername('');
       setPassword('');
       setRegion('ap');
+      setNotes('');
     }
   }, [initialData]);
 
@@ -163,6 +190,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onSubmit, initialData 
       hasSkins: initialData ? initialData.hasSkins : false,
       currentRank: initialData ? initialData.currentRank : 'Unranked',
       lastRefreshed: initialData ? initialData.lastRefreshed : new Date().toISOString(),
+      notes: notes.trim() || undefined,
     });
 
     // Clear form after submission if it's not an edit
@@ -171,6 +199,7 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onSubmit, initialData 
       setUsername('');
       setPassword('');
       setRegion('ap');
+      setNotes('');
     }
   };
 
@@ -223,6 +252,15 @@ export const AccountForm: React.FC<AccountFormProps> = ({ onSubmit, initialData 
                 </option>
               ))}
             </Select>
+          </InputContainer>
+          <InputContainer style={{ gridColumn: '1 / -1' }}>
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <TextArea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Personal notes about this account (e.g., smurf, main, practice account...)"
+            />
           </InputContainer>
         </FormGrid>
         <ButtonContainer>

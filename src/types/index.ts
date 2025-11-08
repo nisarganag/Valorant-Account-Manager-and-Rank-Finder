@@ -9,6 +9,7 @@ export interface Account {
   currentRank: string;
   lastRefreshed: string;
   passwordVisible: boolean;
+  notes?: string; // Personal notes for the account
 }
 
 export interface RankInfo {
@@ -29,4 +30,5 @@ export interface AppSettings {
   theme: Theme;
   autoRefresh: boolean;
   refreshInterval: number;
+  viewLayout: "list" | "grid"; // Layout preference for account display
 }
