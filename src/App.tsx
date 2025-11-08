@@ -13,8 +13,15 @@ import { ViewToggle } from './components/ViewToggle';
 import { FileUpload } from './components/FileUpload';
 import { UpdateManager } from './components';
 import { EncryptionService } from './utils/encryption';
+import { RankService } from './services/rankService';
 import type { Account } from './types';
 import './App.css';
+
+interface RankInfo {
+  rank: string;
+  icon: string;
+  color: string;
+}
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -301,6 +308,8 @@ function AppContent() {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [viewLayout, setViewLayout] = useState<'list' | 'grid'>('list');
   const [showStatistics, setShowStatistics] = useState(false);
+  const [ranks, setRanks] = useState<{ [key: number]: RankInfo }>({});
+  const [loadingRanks, setLoadingRanks] = useState<Set<number>>(new Set());
 
   const loadAccounts = useCallback(async () => {
     if (!masterPassword) return;
@@ -343,6 +352,27 @@ function AppContent() {
       loadAccounts();
     }
   }, [isAuthenticated, masterPassword, loadAccounts]);
+
+  // Centralized rank fetching logic - only fetches when explicitly called (e.g., refresh button)
+  const fetchRankForAccount = useCallback(async (index: number, account: Account) => {
+    if (loadingRanks.has(index)) return;
+    
+    setLoadingRanks(prev => new Set(prev).add(index));
+    
+    try {
+      const rankData = await RankService.fetchRank(account);
+      setRanks(prev => ({ ...prev, [index]: rankData }));
+    } catch (error) {
+      console.error('Error fetching rank:', error);
+      setRanks(prev => ({ ...prev, [index]: { rank: 'Error', icon: '', color: '#FF0000' } }));
+    } finally {
+      setLoadingRanks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+    }
+  }, [loadingRanks]);
 
   const filteredAccounts = useMemo(() => {
     if (!searchTerm) return accounts;
@@ -584,6 +614,9 @@ function AppContent() {
                   onEdit={handleEditAccount}
                   onDelete={handleDeleteAccount}
                   onToggleSkins={handleToggleSkins}
+                  ranks={ranks}
+                  loadingRanks={loadingRanks}
+                  onRefreshRank={fetchRankForAccount}
                 />
               ) : (
                 <AccountTable
@@ -593,6 +626,9 @@ function AppContent() {
                   onToggleSkins={handleToggleSkins}
                   sortConfig={sortConfig}
                   requestSort={requestSort}
+                  ranks={ranks}
+                  loadingRanks={loadingRanks}
+                  onRefreshRank={fetchRankForAccount}
                 />
               )}
             </MainContent>

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { RankService } from '../services/rankService';
 import type { Account } from '../types';
 
 interface AccountGridProps {
@@ -8,6 +7,9 @@ interface AccountGridProps {
   onDelete: (index: number) => void;
   onEdit: (account: Account, index: number) => void;
   onToggleSkins: (index: number) => void;
+  ranks: { [key: number]: RankInfo };
+  loadingRanks: Set<number>;
+  onRefreshRank: (index: number, account: Account) => Promise<void>;
 }
 
 interface RankInfo {
@@ -217,53 +219,10 @@ export const AccountGrid: React.FC<AccountGridProps> = ({
   accounts, 
   onDelete, 
   onEdit, 
-  onToggleSkins 
-}) => {
-  const [ranks, setRanks] = useState<{ [key: number]: RankInfo }>({});
-  const [loadingRanks, setLoadingRanks] = useState<Set<number>>(new Set());
+  onToggleSkins,
+  ranks,
+  loadingRanks}) => {
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
-
-  useEffect(() => {
-    const fetchAllRanks = async () => {
-      const newLoadingRanks = new Set<number>();
-      
-      for (let i = 0; i < accounts.length; i++) {
-        const account = accounts[i];
-        if (!ranks[i] && account.riotId && account.hashtag) {
-          newLoadingRanks.add(i);
-        }
-      }
-      
-      setLoadingRanks(newLoadingRanks);
-
-      for (let i = 0; i < accounts.length; i++) {
-        const account = accounts[i];
-        if (!ranks[i] && account.riotId && account.hashtag) {
-          try {
-            const rankData = await RankService.fetchRank(account);
-            setRanks(prev => ({
-              ...prev,
-              [i]: rankData
-            }));
-          } catch (error) {
-            console.error('Error fetching rank:', error);
-            setRanks(prev => ({
-              ...prev,
-              [i]: { rank: 'Error', icon: '', color: '#FF0000' }
-            }));
-          } finally {
-            setLoadingRanks(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(i);
-              return newSet;
-            });
-          }
-        }
-      }
-    };
-
-    fetchAllRanks();
-  }, [accounts, ranks]);
 
   const togglePasswordVisibility = (index: number) => {
     setVisiblePasswords(prev => ({ ...prev, [index]: !prev[index] }));

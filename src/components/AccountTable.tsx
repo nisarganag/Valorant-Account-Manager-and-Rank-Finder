@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import styled, { useTheme, keyframes } from 'styled-components';
-import { RankService } from '../services/rankService';
 import type { Account } from '../types';
 
 interface AccountTableProps {
@@ -10,6 +9,9 @@ interface AccountTableProps {
   onToggleSkins: (index: number) => void;
   sortConfig: { key: keyof Account | 'rank'; direction: 'ascending' | 'descending' } | null;
   requestSort: (key: keyof Account | 'rank') => void;
+  ranks: { [key: number]: RankInfo };
+  loadingRanks: Set<number>;
+  onRefreshRank: (index: number, account: Account) => Promise<void>;
 }
 
 interface RankInfo {
@@ -297,10 +299,18 @@ const ShareOptionLabel = styled.span`
   font-weight: 500;
 `;
 
-export const AccountTable: React.FC<AccountTableProps> = ({ accounts, onEdit, onDelete, onToggleSkins, sortConfig, requestSort }) => {
+export const AccountTable: React.FC<AccountTableProps> = ({ 
+  accounts, 
+  onEdit, 
+  onDelete, 
+  onToggleSkins, 
+  sortConfig, 
+  requestSort,
+  ranks,
+  loadingRanks,
+  onRefreshRank
+}) => {
   const theme = useTheme();
-  const [ranks, setRanks] = useState<{ [key: number]: RankInfo }>({});
-  const [loadingRanks, setLoadingRanks] = useState<{ [key: number]: boolean }>({});
   const [isFetchingAll, setIsFetchingAll] = useState(false);
   const [currentlyFetchingIndex, setCurrentlyFetchingIndex] = useState<number | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<{ [key: number]: boolean }>({});
@@ -416,64 +426,20 @@ Shared via Valorant Account Manager`;
     return sortableItems;
   }, [accounts, ranks, sortConfig]);
 
-  const handleFetchRank = async (index: number, account: Account) => {
-    setLoadingRanks(prev => ({ ...prev, [index]: true }));
-    try {
-      const rankInfo = await RankService.fetchRank(account);
-      setRanks(prevRanks => ({ ...prevRanks, [index]: rankInfo }));
-    } catch (error) {
-      console.error(`Failed to fetch rank for ${account.username}:`, error);
-      setRanks(prevRanks => ({
-        ...prevRanks,
-        [index]: { rank: 'Account Private', icon: '', color: theme.colors.error },
-      }));
-    } finally {
-      setLoadingRanks(prev => ({ ...prev, [index]: false }));
-    }
-  };
-
   const handleFetchAllRanks = async () => {
     setIsFetchingAll(true);
-    const accountsToFetch = [...accounts];
-    const concurrencyLimit = 1;
-
-    for (let i = 0; i < accountsToFetch.length; i += concurrencyLimit) {
-      const chunk = accountsToFetch.slice(i, i + concurrencyLimit);
-      const promises = chunk.map(async (account) => {
-        const globalIndex = accounts.indexOf(account);
-        if (globalIndex !== -1) {
-          setCurrentlyFetchingIndex(globalIndex); // Indicate current fetch
-          try {
-            const rankInfo = await RankService.fetchRank(account);
-            return { index: globalIndex, rankInfo };
-          } catch (error) {
-            console.error(`Failed to fetch rank for ${account.username}:`, error);
-            const errorInfo = { rank: 'Account Private', icon: '', color: theme.colors.error };
-            return { index: globalIndex, rankInfo: errorInfo };
-          }
-        }
-        return null;
-      });
-
-      const results = await Promise.all(promises);
-      const newRanks: { [key: number]: RankInfo } = {};
-      results.forEach(result => {
-        if (result) {
-          newRanks[result.index] = result.rankInfo;
-        }
-      });
-      setRanks(prevRanks => ({ ...prevRanks, ...newRanks }));
+    for (let i = 0; i < accounts.length; i++) {
+      const account = accounts[i];
+      if (account.riotId && account.hashtag) {
+        setCurrentlyFetchingIndex(i);
+        await onRefreshRank(i, account);
+        // Add small delay between requests
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
     setIsFetchingAll(false);
-    setCurrentlyFetchingIndex(null); // Clear indicator when done
+    setCurrentlyFetchingIndex(null);
   };
-
-  useEffect(() => {
-    if (accounts.length > 0) {
-      handleFetchAllRanks();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts]);
 
   const togglePasswordVisibility = (index: number) => {
     setVisiblePasswords(prev => ({ ...prev, [index]: !prev[index] }));
@@ -511,7 +477,7 @@ Shared via Valorant Account Manager`;
           {sortedAccounts.map((account) => {
             const globalIndex = accounts.indexOf(account);
             const rankInfo = ranks[globalIndex];
-            const isLoading = loadingRanks[globalIndex];
+            const isLoading = loadingRanks.has(globalIndex);
             const isPasswordVisible = visiblePasswords[globalIndex];
             const isCurrentlyFetching = currentlyFetchingIndex === globalIndex;
 
@@ -579,7 +545,7 @@ Shared via Valorant Account Manager`;
                   <ActionButtonContainer>
                     <Button onClick={() => onEdit(account, globalIndex)}>Edit</Button>
                     <Button onClick={() => onDelete(globalIndex)} variant="danger">Delete</Button>
-                    <Button onClick={() => handleFetchRank(globalIndex, account)} disabled={isLoading}>
+                    <Button onClick={() => onRefreshRank(globalIndex, account)} disabled={isLoading}>
                       {isLoading ? <Spinner /> : 'Refresh'}
                     </Button>
                     <ShareIcon onClick={() => openShareModal(account, globalIndex)} title="Share account details">
