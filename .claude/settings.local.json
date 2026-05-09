@@ -8,7 +8,10 @@
       "WebFetch(domain:valapidocs.techchrism.me)",
       "WebFetch(domain:api.henrikdev.xyz)",
       "Bash(npx tsc *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(gh run *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
