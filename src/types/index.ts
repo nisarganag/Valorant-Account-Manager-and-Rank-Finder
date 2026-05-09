@@ -9,7 +9,10 @@ export interface Account {
   currentRank: string;
   lastRefreshed: string;
   passwordVisible: boolean;
-  notes?: string; // Personal notes for the account
+  notes?: string;
+  tags?: string[];
+  lentTo?: string;
+  lentSince?: string;
 }
 
 export interface RankInfo {
@@ -17,6 +20,22 @@ export interface RankInfo {
   rr: number;
   icon: string;
   color: string;
+}
+
+export interface RankHistoryEntry {
+  date: string;
+  rank: string;
+  rr: number;
+  icon: string;
+  color: string;
+}
+
+export interface AccountRankHistory {
+  accountId: string;
+  history: RankHistoryEntry[];
+  peakRank: string;
+  peakRR: number;
+  peakIcon: string;
 }
 
 export interface MasterPassword {
@@ -30,5 +49,12 @@ export interface AppSettings {
   theme: Theme;
   autoRefresh: boolean;
   refreshInterval: number;
-  viewLayout: "list" | "grid"; // Layout preference for account display
+  viewLayout: "list" | "grid";
+  compactView: boolean;
+  showStatistics: boolean;
+  sortKey: string;
+  sortDirection: "ascending" | "descending";
+  apiKey?: string;
 }
+
+export type BulkAction = "delete" | "tag" | "refresh" | "export";

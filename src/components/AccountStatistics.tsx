@@ -18,174 +18,136 @@ const StatsContainer = styled.div`
 `;
 
 const StatsHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.sizes.spacing.md};
-  margin-bottom: ${props => props.theme.sizes.spacing.lg};
+  display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
 `;
 
 const StatsTitle = styled.h3`
   color: ${props => props.theme.colors.text.primary};
-  font-size: ${props => props.theme.sizes.fontSize.large};
-  margin: 0;
-  font-weight: 600;
-`;
-
-const StatsIcon = styled.div`
-  font-size: ${props => props.theme.sizes.fontSize.xlarge};
+  font-size: 16px; margin: 0; font-weight: 600;
 `;
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: ${props => props.theme.sizes.spacing.md};
-  margin-bottom: ${props => props.theme.sizes.spacing.lg};
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 24px;
 `;
 
 const StatCard = styled.div`
   background: ${props => props.theme.colors.background};
   border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.sizes.borderRadius};
-  padding: ${props => props.theme.sizes.spacing.md};
-  text-align: center;
-  transition: ${props => props.theme.effects.transition};
-  
-  &:hover {
-    border-color: ${props => props.theme.colors.primary};
-    transform: translateY(-2px);
-  }
+  border-radius: 8px; padding: 16px; text-align: center;
+  &:hover { border-color: ${props => props.theme.colors.primary}; transform: translateY(-2px); }
 `;
 
 const StatValue = styled.div`
-  font-size: ${props => props.theme.sizes.fontSize.xlarge};
-  font-weight: 700;
-  color: ${props => props.theme.colors.primary};
-  margin-bottom: ${props => props.theme.sizes.spacing.xs};
+  font-size: 20px; font-weight: 700; color: ${props => props.theme.colors.primary}; margin-bottom: 4px;
 `;
 
 const StatLabel = styled.div`
-  font-size: ${props => props.theme.sizes.fontSize.small};
-  color: ${props => props.theme.colors.text.secondary};
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 12px; color: ${props => props.theme.colors.text.secondary}; text-transform: uppercase; letter-spacing: 0.5px;
 `;
 
-const RankDistributionContainer = styled.div`
-  margin-top: ${props => props.theme.sizes.spacing.lg};
-`;
-
-const RankDistributionTitle = styled.h4`
-  color: ${props => props.theme.colors.text.primary};
-  margin-bottom: ${props => props.theme.sizes.spacing.md};
-  font-size: ${props => props.theme.sizes.fontSize.medium};
-`;
-
-const RankDistributionGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: ${props => props.theme.sizes.spacing.sm};
-`;
-
+const RankDistributionContainer = styled.div` margin-top: 24px; `;
+const RankDistributionTitle = styled.h4` color: ${props => props.theme.colors.text.primary}; margin-bottom: 16px; font-size: 14px; `;
+const RankDistributionGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; `;
 const RankItem = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: ${props => props.theme.sizes.spacing.sm};
-  background: ${props => props.theme.colors.background};
-  border-radius: ${props => props.theme.sizes.borderRadius};
-  border: 1px solid ${props => props.theme.colors.border};
-  transition: ${props => props.theme.effects.transition};
-  
-  &:hover {
-    border-color: ${props => props.theme.colors.primary};
-  }
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px; background: ${props => props.theme.colors.background};
+  border-radius: 8px; border: 1px solid ${props => props.theme.colors.border};
+  &:hover { border-color: ${props => props.theme.colors.primary}; }
 `;
+const RankName = styled.span` font-size: 12px; color: ${props => props.theme.colors.text.secondary}; margin-top: 4px; text-align: center; `;
+const RankCount = styled.span` font-size: 16px; font-weight: 600; color: ${props => props.theme.colors.text.primary}; `;
 
-const RankName = styled.span`
-  font-size: ${props => props.theme.sizes.fontSize.small};
-  color: ${props => props.theme.colors.text.secondary};
-  margin-top: ${props => props.theme.sizes.spacing.xs};
-  text-align: center;
-`;
-
-const RankCount = styled.span`
-  font-size: ${props => props.theme.sizes.fontSize.medium};
-  font-weight: 600;
-  color: ${props => props.theme.colors.text.primary};
-  margin-top: 2px;
-`;
+interface RankInfo {
+  rank: string;
+  color: string;
+}
 
 interface AccountStatisticsProps {
   accounts: Account[];
   isVisible: boolean;
   onClose: () => void;
+  ranks?: { [key: number]: RankInfo };
 }
 
-export const AccountStatistics: React.FC<AccountStatisticsProps> = ({ 
-  accounts, 
-  isVisible, 
-  onClose 
+export const AccountStatistics: React.FC<AccountStatisticsProps> = ({
+  accounts, isVisible, onClose, ranks = {}
 }) => {
   if (!isVisible) return null;
 
-  // Calculate basic statistics
   const totalAccounts = accounts.length;
   const accountsWithSkins = accounts.filter(acc => acc.hasSkins).length;
   const regions = [...new Set(accounts.map(acc => acc.region))];
   const totalRegions = regions.length;
-  
-  // Calculate rank distribution
-  const rankDistribution = accounts.reduce((acc, account) => {
-    const rank = account.currentRank || 'Unranked';
+  const accountsLent = accounts.filter(a => a.lentTo).length;
+  const totalTags = new Set(accounts.flatMap(a => a.tags || [])).size;
+
+  const rankDistribution = accounts.reduce((acc, account, i) => {
+    const rank = ranks[i]?.rank || account.currentRank || 'Unranked';
     acc[rank] = (acc[rank] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  // Sort ranks by count (descending)
-  const sortedRanks = Object.entries(rankDistribution)
-    .sort(([, a], [, b]) => b - a);
+  const sortedRanks = Object.entries(rankDistribution).sort(([, a], [, b]) => b - a);
+
+  // Region distribution
+  const regionDistribution = regions.reduce((acc, region) => {
+    acc[region] = accounts.filter(a => a.region === region).length;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <StatsContainer>
       <StatsHeader>
-        <StatsIcon>📊</StatsIcon>
+        <span style={{ fontSize: '24px' }}>📊</span>
         <StatsTitle>Account Statistics</StatsTitle>
-        <button
-          onClick={onClose}
-          style={{
-            marginLeft: 'auto',
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            cursor: 'pointer',
-            color: 'inherit'
-          }}
-        >
+        <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'inherit' }}>
           ×
         </button>
       </StatsHeader>
-      
+
       <StatsGrid>
         <StatCard>
           <StatValue>{totalAccounts}</StatValue>
           <StatLabel>Total Accounts</StatLabel>
         </StatCard>
-        
         <StatCard>
           <StatValue>{accountsWithSkins}</StatValue>
-          <StatLabel>Accounts with Skins</StatLabel>
+          <StatLabel>With Skins</StatLabel>
         </StatCard>
-        
         <StatCard>
           <StatValue>{totalRegions}</StatValue>
           <StatLabel>Regions Used</StatLabel>
         </StatCard>
-        
         <StatCard>
           <StatValue>{((accountsWithSkins / totalAccounts) * 100 || 0).toFixed(1)}%</StatValue>
           <StatLabel>Skin Coverage</StatLabel>
         </StatCard>
+        <StatCard>
+          <StatValue>{accountsLent}</StatValue>
+          <StatLabel>Lent Out</StatLabel>
+        </StatCard>
+        <StatCard>
+          <StatValue>{totalTags}</StatValue>
+          <StatLabel>Tags Used</StatLabel>
+        </StatCard>
       </StatsGrid>
+
+      {/* Region distribution */}
+      {Object.keys(regionDistribution).length > 0 && (
+        <>
+          <RankDistributionTitle>🌍 Region Distribution</RankDistributionTitle>
+          <RankDistributionGrid>
+            {Object.entries(regionDistribution).map(([region, count]) => (
+              <RankItem key={region}>
+                <RankCount>{count}</RankCount>
+                <RankName>{region.toUpperCase()}</RankName>
+              </RankItem>
+            ))}
+          </RankDistributionGrid>
+        </>
+      )}
 
       {totalAccounts > 0 && (
         <RankDistributionContainer>

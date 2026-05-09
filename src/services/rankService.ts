@@ -1,159 +1,192 @@
-import axios from 'axios';
-import type { Account } from '../types';
+import type { Account, RankInfo, RankHistoryEntry } from '../types';
+
+const HENRIK_BASE = 'https://api.henrikdev.xyz';
+const LEGACY_BASE = 'https://vaccie.pythonanywhere.com/mmr';
 
 export class RankService {
-  private static readonly API_BASE_URL = 'https://vaccie.pythonanywhere.com/mmr';
-  
-  static async fetchRank(account: Account): Promise<{ rank: string; icon: string; color: string }> {
+  static async fetchRank(
+    account: Account,
+    apiKey?: string
+  ): Promise<RankInfo> {
     try {
-      // Remove spaces from riotId for API call
       const cleanRiotId = account.riotId.replace(/\s+/g, '');
-      
-      console.log('Fetching rank for account:', { riotId: cleanRiotId, hashtag: account.hashtag, region: account.region });
-      let rankString: string;
-      if (window.electronAPI && window.electronAPI.fetchRank) {
-        const result = await window.electronAPI.fetchRank(cleanRiotId, account.hashtag, account.region);
+      const encodedName = encodeURIComponent(cleanRiotId);
+      const encodedTag = encodeURIComponent(account.hashtag);
+
+      if (window.electronAPI?.fetchRank) {
+        const result = await window.electronAPI.fetchRank(
+          account.region,
+          encodedName,
+          encodedTag,
+          apiKey
+        );
+
         if (result.success && result.data) {
-          if (typeof result.data === 'string') {
-            rankString = result.data;
-          } else if (result.data && typeof result.data === 'object' && 'current_rank' in result.data) {
-            rankString = result.data.current_rank || 'Account Private';
-          } else {
-            rankString = 'Account Private';
+          if (apiKey) {
+            return this.parseHenrikResponse(result.data);
           }
-        } else {
-          rankString = 'Account Private';
+          return this.parseLegacyResponse(result.data);
         }
-      } else {
-        rankString = await this.fetchRankDirectly({ ...account, riotId: cleanRiotId });
       }
 
-      if (rankString.includes('Errore nel recupero dei dati')) {
-        rankString = 'Account Private';
+      if (apiKey) {
+        return this.fetchHenrik(encodedName, encodedTag, account.region, apiKey);
       }
-
-      const icon = this.getRankIcon(rankString);
-      const color = this.getRankColor(rankString);
-
-      return { rank: rankString, icon: `./icons/${icon}`, color };
-
-    } catch (error) {
-      console.error('Error fetching rank:', error);
-      return { rank: 'Account Private', icon: '', color: '#FF0000' };
+      return this.fetchLegacy(encodedName, encodedTag, account.region);
+    } catch {
+      return { rank: 'Error', rr: 0, icon: '', color: '#FF0000' };
     }
   }
 
-  private static async fetchRankDirectly(account: Account): Promise<string> {
+  static async fetchRankHistory(
+    account: Account,
+    apiKey?: string
+  ): Promise<RankHistoryEntry[]> {
+    if (!apiKey) return []; // No history without HenrikDev key
     try {
-      const encodedName = encodeURIComponent(account.riotId);
+      const cleanRiotId = account.riotId.replace(/\s+/g, '');
+      const encodedName = encodeURIComponent(cleanRiotId);
       const encodedTag = encodeURIComponent(account.hashtag);
-      const url = `${this.API_BASE_URL}/${encodedName}/${encodedTag}/${account.region}`;
-      
-      console.log('Fetching rank from URL:', url);
-      
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        timeout: 15000
-      });
 
-      if (response.status === 200) {
-        const contentType = response.headers['content-type'] || '';
-        
-        if (contentType.includes('application/json')) {
-          const data = response.data;
-          if (data.current_rank) {
-            return data.current_rank;
-          }
-        } else {
-          // Handle text response
-          const responseText = response.data;
-          if (responseText.includes('Errore nel recupero dei dati')) {
-            return 'Account Private';
-          }
-          return responseText;
+      if (window.electronAPI?.fetchRankHistory) {
+        const result = await window.electronAPI.fetchRankHistory(
+          account.region,
+          encodedName,
+          encodedTag,
+          apiKey
+        );
+        if (result.success && result.data) {
+          return this.parseHistoryResponse(result.data);
         }
       }
-
-      return 'Account Private';
-    } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error) {
-        console.error(`Error fetching rank - Status: ${(error as { response: { status: number } }).response.status}, URL: ${this.API_BASE_URL}/${encodeURIComponent(account.riotId)}/${encodeURIComponent(account.hashtag)}/${account.region}`);
-      } else {
-        console.error('Error fetching rank directly:', error instanceof Error ? error.message : 'Unknown error');
-      }
-      return 'API Error';
+      return [];
+    } catch {
+      return [];
     }
+  }
+
+  // --- HenrikDev API ---
+  private static parseHenrikResponse(data: any): RankInfo {
+    if (data?.data?.current_data) {
+      const cd = data.data.current_data;
+      const rank = cd.currenttierpatched || cd.currenttier || 'Unranked';
+      const rr = cd.ranking_in_tier ?? cd.elo ?? 0;
+      const icon = cd.images?.small || cd.images?.large || '';
+      const color = this.getRankColor(rank);
+      return { rank, rr, icon, color };
+    }
+    if (data?.data?.currenttierpatched) {
+      const rank = data.data.currenttierpatched;
+      return { rank, rr: data.data.ranking_in_tier ?? 0, icon: '', color: this.getRankColor(rank) };
+    }
+    return { rank: 'Unranked', rr: 0, icon: '', color: '#888888' };
+  }
+
+  // --- Legacy API (vaccie.pythonanywhere.com) ---
+  private static parseLegacyResponse(data: any): RankInfo {
+    let rankString = '';
+    if (typeof data === 'string') {
+      rankString = data;
+    } else if (data?.current_rank) {
+      rankString = data.current_rank;
+    } else if (data?.rank) {
+      rankString = data.rank;
+    }
+
+    if (!rankString || rankString.includes('Errore nel recupero dei dati')) {
+      return { rank: 'Account Private', rr: 0, icon: '', color: '#FF0000' };
+    }
+
+    const icon = this.getRankIcon(rankString);
+    const color = this.getRankColor(rankString);
+    return { rank: rankString, rr: 0, icon: icon ? `./icons/${icon}` : '', color };
+  }
+
+  private static async fetchHenrik(
+    name: string, tag: string, region: string, apiKey: string
+  ): Promise<RankInfo> {
+    const url = `${HENRIK_BASE}/valorant/v2/mmr/${region}/${name}/${tag}`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'ValorantAccountManager/1.0', 'Authorization': apiKey },
+    });
+    if (response.ok) {
+      return this.parseHenrikResponse(await response.json());
+    }
+    if (response.status === 404) {
+      return { rank: 'Account Private', rr: 0, icon: '', color: '#FF0000' };
+    }
+    return { rank: 'Error', rr: 0, icon: '', color: '#FF0000' };
+  }
+
+  private static async fetchLegacy(
+    name: string, tag: string, region: string
+  ): Promise<RankInfo> {
+    const url = `${LEGACY_BASE}/${name}/${tag}/${region}`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    if (response.ok) {
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        return this.parseLegacyResponse(data);
+      } catch {
+        return this.parseLegacyResponse(text);
+      }
+    }
+    if (response.status === 404) {
+      return { rank: 'Account Private', rr: 0, icon: '', color: '#FF0000' };
+    }
+    return { rank: 'Error', rr: 0, icon: '', color: '#FF0000' };
+  }
+
+  private static parseHistoryResponse(data: any): RankHistoryEntry[] {
+    const entries: RankHistoryEntry[] = [];
+    const items = data?.data || [];
+    for (const item of items) {
+      const rank = item.currenttierpatched || item.currenttier || 'Unranked';
+      entries.push({
+        date: item.match_started || item.date || '',
+        rank,
+        rr: item.ranking_in_tier ?? item.elo ?? 0,
+        icon: item.images?.small || '',
+        color: this.getRankColor(rank),
+      });
+    }
+    return entries.filter((e) => e.rank !== 'Unranked');
   }
 
   static getRankIcon(rank: string): string {
     const rankLower = rank.toLowerCase();
-    
-    if (rankLower.includes('iron')) {
-      if (rankLower.includes('iron 1')) return 'Iron_1_Rank.png';
-      if (rankLower.includes('iron 2')) return 'Iron_2_Rank.png';
-      if (rankLower.includes('iron 3')) return 'Iron_3_Rank.png';
-      return 'Iron_1_Rank.png';
-    } else if (rankLower.includes('bronze')) {
-      if (rankLower.includes('bronze 1')) return 'Bronze_1_Rank.png';
-      if (rankLower.includes('bronze 2')) return 'Bronze_2_Rank.png';
-      if (rankLower.includes('bronze 3')) return 'Bronze_3_Rank.png';
-      return 'Bronze_1_Rank.png';
-    } else if (rankLower.includes('silver')) {
-      if (rankLower.includes('silver 1')) return 'Silver_1_Rank.png';
-      if (rankLower.includes('silver 2')) return 'Silver_2_Rank.png';
-      if (rankLower.includes('silver 3')) return 'Silver_3_Rank.png';
-      return 'Silver_1_Rank.png';
-    } else if (rankLower.includes('gold')) {
-      if (rankLower.includes('gold 1')) return 'Gold_1_Rank.png';
-      if (rankLower.includes('gold 2')) return 'Gold_2_Rank.png';
-      if (rankLower.includes('gold 3')) return 'Gold_3_Rank.png';
-      return 'Gold_1_Rank.png';
-    } else if (rankLower.includes('platinum')) {
-      if (rankLower.includes('platinum 1')) return 'Platinum_1_Rank.png';
-      if (rankLower.includes('platinum 2')) return 'Platinum_2_Rank.png';
-      if (rankLower.includes('platinum 3')) return 'Platinum_3_Rank.png';
-      return 'Platinum_1_Rank.png';
-    } else if (rankLower.includes('diamond')) {
-      if (rankLower.includes('diamond 1')) return 'Diamond_1_Rank.png';
-      if (rankLower.includes('diamond 2')) return 'Diamond_2_Rank.png';
-      if (rankLower.includes('diamond 3')) return 'Diamond_3_Rank.png';
-      return 'Diamond_1_Rank.png';
-    } else if (rankLower.includes('ascendant')) {
-      if (rankLower.includes('ascendant 1')) return 'Ascendant_1_Rank.png';
-      if (rankLower.includes('ascendant 2')) return 'Ascendant_2_Rank.png';
-      if (rankLower.includes('ascendant 3')) return 'Ascendant_3_Rank.png';
-      return 'Ascendant_1_Rank.png';
-    } else if (rankLower.includes('immortal')) {
-      if (rankLower.includes('immortal 1')) return 'Immortal_1_Rank.png';
-      if (rankLower.includes('immortal 2')) return 'Immortal_2_Rank.png';
-      if (rankLower.includes('immortal 3')) return 'Immortal_3_Rank.png';
-      return 'Immortal_1_Rank.png';
-    } else if (rankLower.includes('radiant')) {
-      return 'Radiant_Rank.png';
+    const mapping: Record<string, string> = {
+      'iron 1': 'Iron_1_Rank.png', 'iron 2': 'Iron_2_Rank.png', 'iron 3': 'Iron_3_Rank.png',
+      'bronze 1': 'Bronze_1_Rank.png', 'bronze 2': 'Bronze_2_Rank.png', 'bronze 3': 'Bronze_3_Rank.png',
+      'silver 1': 'Silver_1_Rank.png', 'silver 2': 'Silver_2_Rank.png', 'silver 3': 'Silver_3_Rank.png',
+      'gold 1': 'Gold_1_Rank.png', 'gold 2': 'Gold_2_Rank.png', 'gold 3': 'Gold_3_Rank.png',
+      'platinum 1': 'Platinum_1_Rank.png', 'platinum 2': 'Platinum_2_Rank.png', 'platinum 3': 'Platinum_3_Rank.png',
+      'diamond 1': 'Diamond_1_Rank.png', 'diamond 2': 'Diamond_2_Rank.png', 'diamond 3': 'Diamond_3_Rank.png',
+      'ascendant 1': 'Ascendant_1_Rank.png', 'ascendant 2': 'Ascendant_2_Rank.png', 'ascendant 3': 'Ascendant_3_Rank.png',
+      'immortal 1': 'Immortal_1_Rank.png', 'immortal 2': 'Immortal_2_Rank.png', 'immortal 3': 'Immortal_3_Rank.png',
+      'radiant': 'Radiant_Rank.png',
+    };
+    for (const [key, icon] of Object.entries(mapping)) {
+      if (rankLower.includes(key)) return icon;
     }
-    if (rankLower.includes('unrated')) {
-      return '';
-    }
-    
-    return ''; // No icon for unranked, error, etc.
+    return '';
   }
 
   static getRankColor(rank: string): string {
-    const rankLower = rank.toLowerCase();
-    
-    if (rankLower.includes('iron')) return '#6B5B73';
-    if (rankLower.includes('bronze')) return '#CD7F32';
-    if (rankLower.includes('silver')) return '#C0C0C0';
-    if (rankLower.includes('gold')) return '#FFD700';
-    if (rankLower.includes('platinum')) return '#00CED1';
-    if (rankLower.includes('diamond')) return '#B9F2FF';
-    if (rankLower.includes('ascendant')) return '#32CD32';
-    if (rankLower.includes('immortal')) return '#FF69B4';
-    if (rankLower.includes('radiant')) return '#FFFF00';
-    if (rankLower.includes('error') || rankLower.includes('failed')) return '#FF0000';
-    
-    return '#888888'; // Default gray for unranked
+    const r = rank.toLowerCase();
+    if (r.includes('iron')) return '#6B5B73';
+    if (r.includes('bronze')) return '#CD7F32';
+    if (r.includes('silver')) return '#C0C0C0';
+    if (r.includes('gold')) return '#FFD700';
+    if (r.includes('platinum')) return '#00CED1';
+    if (r.includes('diamond')) return '#B9F2FF';
+    if (r.includes('ascendant')) return '#32CD32';
+    if (r.includes('immortal')) return '#FF69B4';
+    if (r.includes('radiant')) return '#FFFF00';
+    if (r.includes('error') || r.includes('failed')) return '#FF0000';
+    return '#888888';
   }
 }

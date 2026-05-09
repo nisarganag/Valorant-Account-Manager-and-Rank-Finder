@@ -12,22 +12,20 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { ViewToggle } from './components/ViewToggle';
 import { FileUpload } from './components/FileUpload';
 import { UpdateManager } from './components';
+import { BulkActionBar } from './components/BulkActionBar';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { RankHistoryPanel } from './components/RankHistoryPanel';
+import { TagManager } from './components/TagManager';
 import { EncryptionService } from './utils/encryption';
 import { RankService } from './services/rankService';
-import type { Account } from './types';
+import type { Account, RankInfo, RankHistoryEntry, AppSettings } from './types';
 import './App.css';
-
-interface RankInfo {
-  rank: string;
-  icon: string;
-  color: string;
-}
 
 const GlobalStyle = createGlobalStyle`
   body {
     background-color: ${props => props.theme.colors.background};
     color: ${props => props.theme.colors.text.primary};
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -37,17 +35,9 @@ const GlobalStyle = createGlobalStyle`
     --scrollbar-thumb-hover: ${props => props.theme.colors.text.secondary};
   }
 
-  ::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-  }
+  ::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 `;
 
 const AppContainer = styled.div`
@@ -66,14 +56,14 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow: hidden; /* Prevent scrolling on the main container */
+  overflow: hidden;
 `;
 
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  overflow-y: auto; /* Allow scrolling on this container */
+  overflow-y: auto;
 `;
 
 const Header = styled.header`
@@ -108,7 +98,6 @@ const LoadingContainer = styled.div`
   min-height: 200px;
   color: ${props => props.theme.colors.text.secondary};
   font-size: ${props => props.theme.sizes.fontSize.large};
-  transition: ${props => props.theme.effects.transition};
 `;
 
 const ErrorContainer = styled.div`
@@ -119,14 +108,9 @@ const ErrorContainer = styled.div`
   margin: ${props => props.theme.sizes.spacing.md};
   color: ${props => props.theme.colors.error};
   text-align: center;
-  transition: ${props => props.theme.effects.transition};
 `;
 
-const HeaderContent = styled.div`
-  text-align: center;
-  flex-grow: 1;
-`;
-
+const HeaderContent = styled.div` text-align: center; flex-grow: 1; `;
 const HeaderControls = styled.div`
   display: flex;
   align-items: center;
@@ -150,107 +134,39 @@ const UpdateButton = styled.button`
   overflow: hidden;
   animation: subtlePulse 3s ease-in-out infinite;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: ${props => `linear-gradient(135deg, ${props.theme.colors.primary}20, ${props.theme.colors.secondary}15)`};
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
   &:hover {
     background: ${props => `linear-gradient(135deg, ${props.theme.colors.primary}25, ${props.theme.colors.secondary}20)`};
     color: ${props => props.theme.colors.primary};
     border-color: ${props => props.theme.colors.primary};
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    animation: none; /* Stop the pulse animation on hover */
-
-    &::before {
-      opacity: 1;
-    }
-
-    .update-icon {
-      animation: rotateUpdate 0.8s ease-in-out infinite;
-    }
-  }
-
-  &:active {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  @keyframes rotateUpdate {
-    0% { 
-      transform: rotate(0deg) scale(1);
-    }
-    25% { 
-      transform: rotate(90deg) scale(1.1);
-    }
-    50% { 
-      transform: rotate(180deg) scale(1);
-    }
-    75% { 
-      transform: rotate(270deg) scale(1.1);
-    }
-    100% { 
-      transform: rotate(360deg) scale(1);
-    }
+    animation: none;
   }
 
   @keyframes subtlePulse {
-    0%, 100% { 
-      box-shadow: 0 0 0 0 ${props => props.theme.colors.primary}20;
-    }
-    50% { 
-      box-shadow: 0 0 0 4px ${props => props.theme.colors.primary}10;
-    }
+    0%, 100% { box-shadow: 0 0 0 0 ${props => props.theme.colors.primary}20; }
+    50% { box-shadow: 0 0 0 4px ${props => props.theme.colors.primary}10; }
   }
 `;
 
 const UpdateIcon = styled.div`
-  position: relative;
-  z-index: 1;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  svg {
-    width: 100%;
-    height: 100%;
-    fill: currentColor;
-    transition: transform 0.3s ease;
-  }
+  position: relative; z-index: 1; width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  svg { width: 100%; height: 100%; fill: currentColor; }
 `;
 
 const ImportButton = styled.button`
   background: ${props => props.theme.colors.primary};
-  color: white;
-  border: none;
+  color: white; border: none;
   border-radius: ${props => props.theme.sizes.borderRadius};
   padding: ${props => props.theme.sizes.spacing.sm} ${props => props.theme.sizes.spacing.md};
   font-size: ${props => props.theme.sizes.fontSize.medium};
-  font-weight: 600;
-  cursor: pointer;
+  font-weight: 600; cursor: pointer;
   transition: ${props => props.theme.effects.transition};
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
   gap: ${props => props.theme.sizes.spacing.sm};
-  
-  &:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
+  &:hover { opacity: 0.9; transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
 `;
 
 const ControlsContainer = styled.div`
@@ -259,11 +175,10 @@ const ControlsContainer = styled.div`
   align-items: center;
   margin-bottom: ${(props) => props.theme.sizes.spacing.md};
   gap: ${props => props.theme.sizes.spacing.md};
+  flex-wrap: wrap;
 `;
 
-const SearchBarContainer = styled.div`
-  width: 300px; /* Or any other width */
-`;
+const SearchBarContainer = styled.div` width: 300px; `;
 
 const Footer = styled.footer`
   text-align: center;
@@ -272,26 +187,81 @@ const Footer = styled.footer`
   font-size: ${props => props.theme.sizes.fontSize.small};
   border-top: 1px solid ${props => props.theme.colors.border}40;
   margin-top: auto;
-  transition: ${props => props.theme.effects.transition};
 `;
 
-const FooterText = styled.p`
-  margin: 0;
-  opacity: 0.7;
-`;
+const FooterText = styled.p` margin: 0; opacity: 0.7; `;
 
 const GithubLink = styled.a`
   color: ${props => props.theme.colors.primary};
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: ${props => props.theme.effects.transition};
-  
-  &:hover {
-    text-decoration: underline;
-    opacity: 0.8;
-  }
+  font-weight: 600; text-decoration: none; cursor: pointer;
+  &:hover { text-decoration: underline; opacity: 0.8; }
 `;
+
+const Badge = styled.span`
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 4px;
+`;
+
+const SettingsBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: ${props => props.theme.colors.surface};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.sizes.borderRadius};
+  margin-bottom: ${props => props.theme.sizes.spacing.md};
+  flex-wrap: wrap;
+`;
+
+const SettingInput = styled.input`
+  padding: 4px 8px;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: 4px;
+  background: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: 12px;
+  width: 200px;
+  &:focus { outline: none; border-color: ${props => props.theme.colors.primary}; }
+`;
+
+const SettingLabel = styled.label`
+  font-size: 11px;
+  color: ${props => props.theme.colors.text.secondary};
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const DEFAULT_SETTINGS: AppSettings = {
+  theme: 'dark',
+  autoRefresh: false,
+  refreshInterval: 30,
+  viewLayout: 'list',
+  compactView: false,
+  showStatistics: false,
+  sortKey: '',
+  sortDirection: 'ascending',
+  apiKey: '',
+};
+
+const SHORTCUTS = [
+  { keys: 'Ctrl+F', desc: 'Focus search' },
+  { keys: 'Ctrl+N', desc: 'New account' },
+  { keys: 'Ctrl+R', desc: 'Refresh all ranks' },
+  { keys: 'Ctrl+Shift+I', desc: 'Import accounts' },
+  { keys: 'Ctrl+Shift+S', desc: 'Toggle statistics' },
+  { keys: 'Ctrl+Shift+E', desc: 'Export accounts' },
+  { keys: 'Ctrl+Shift+G', desc: 'Toggle grid/list view' },
+  { keys: 'Ctrl+Shift+C', desc: 'Toggle compact mode' },
+  { keys: 'Escape', desc: 'Close modals / deselect' },
+  { keys: '?', desc: 'Show shortcuts' },
+];
 
 function AppContent() {
   const { theme } = useTheme();
@@ -314,35 +284,124 @@ function AppContent() {
   const [isFetchingAll, setIsFetchingAll] = useState(false);
   const shouldStopFetchingRef = useRef(false);
 
+  // New state
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<number>>(new Set());
+  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [compactView, setCompactView] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [rankHistories, setRankHistories] = useState<{ [accountId: string]: { history: RankHistoryEntry[]; peakRank: string; peakRR: number; peakIcon: string } }>({});
+  const [showRankHistory, setShowRankHistory] = useState<string | null>(null);
+  const [showTagManager, setShowTagManager] = useState(false);
+  const [lendingFilter, setLendingFilter] = useState<'all' | 'lent' | 'available'>('all');
+
+  // Collect all unique tags
+  useEffect(() => {
+    const tags = new Set<string>();
+    accounts.forEach((a) => a.tags?.forEach((t) => tags.add(t)));
+    setAllTags(Array.from(tags).sort());
+  }, [accounts]);
+
+  // Load settings on auth
+  useEffect(() => {
+    if (!isAuthenticated || !masterPassword) return;
+    loadSettings();
+    loadApiKey();
+    loadRankHistories();
+  }, [isAuthenticated, masterPassword]);
+
+  const loadSettings = async () => {
+    try {
+      if (window.electronAPI?.loadSettings) {
+        const result = await window.electronAPI.loadSettings();
+        if (result.success && result.data) {
+          const decrypted = EncryptionService.decrypt(result.data);
+          const parsed = JSON.parse(decrypted);
+          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
+          setViewLayout(parsed.viewLayout || 'list');
+          setCompactView(parsed.compactView || false);
+          if (parsed.sortKey) {
+            setSortConfig({ key: parsed.sortKey, direction: parsed.sortDirection || 'ascending' });
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  const saveSettings = async (updated: Partial<AppSettings>) => {
+    const newSettings = { ...settings, ...updated };
+    setSettings(newSettings);
+    try {
+      if (window.electronAPI?.saveSettings) {
+        const encrypted = EncryptionService.encrypt(JSON.stringify(newSettings));
+        await window.electronAPI.saveSettings(encrypted);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const loadApiKey = async () => {
+    try {
+      if (window.electronAPI?.loadApiKey) {
+        const result = await window.electronAPI.loadApiKey();
+        if (result.success && result.data) {
+          const decrypted = EncryptionService.decrypt(result.data);
+          setApiKey(decrypted);
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  const saveApiKey = async (key: string) => {
+    setApiKey(key);
+    try {
+      if (window.electronAPI?.saveApiKey) {
+        const encrypted = EncryptionService.encrypt(key);
+        await window.electronAPI.saveApiKey(encrypted);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const loadRankHistories = async () => {
+    try {
+      if (window.electronAPI?.loadRankHistory) {
+        const result = await window.electronAPI.loadRankHistory();
+        if (result.success && result.data) {
+          const decrypted = EncryptionService.decrypt(result.data);
+          setRankHistories(JSON.parse(decrypted));
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+
   const loadAccounts = useCallback(async () => {
     if (!masterPassword) return;
-
     setIsLoading(true);
     setError('');
-
     try {
       const result = await window.electronAPI.loadAccounts();
       if (result.success && result.data) {
         const decryptedData = EncryptionService.decrypt(result.data);
         const accountsData = JSON.parse(decryptedData);
-        // Map accountName from JSON to riotId in our app
-        const mappedAccounts = Array.isArray(accountsData) 
-          ? accountsData.map((acc: Account & { accountName?: string }) => {
-              const riotId = acc.accountName || acc.riotId;
-              console.log('Loading account:', { riotId, hashtag: acc.hashtag, username: acc.username });
-              return {
-                ...acc,
-                riotId,
-                accountName: undefined // Remove the old field
-              };
-            })
+        const mappedAccounts = Array.isArray(accountsData)
+          ? accountsData.map((acc: Account & { accountName?: string }) => ({
+              ...acc,
+              riotId: acc.accountName || acc.riotId,
+              accountName: undefined,
+              tags: acc.tags || [],
+            }))
           : [];
         setAccounts(mappedAccounts);
       } else {
         setAccounts([]);
       }
-    } catch (error) {
-      console.error('Error loading accounts:', error);
+    } catch (err) {
+      console.error('Error loading accounts:', err);
       setError('Failed to load accounts. Please check your password.');
       setAccounts([]);
     } finally {
@@ -356,57 +415,68 @@ function AppContent() {
     }
   }, [isAuthenticated, masterPassword, loadAccounts]);
 
-  // Centralized rank fetching logic - only fetches when explicitly called (e.g., refresh button)
   const fetchRankForAccount = useCallback(async (index: number, account: Account) => {
     if (loadingRanks.has(index)) return;
-    
-    setLoadingRanks(prev => new Set(prev).add(index));
-    
+    setLoadingRanks((prev) => new Set(prev).add(index));
     try {
-      const rankData = await RankService.fetchRank(account);
-      setRanks(prev => ({ ...prev, [index]: rankData }));
-    } catch (error) {
-      console.error('Error fetching rank:', error);
-      setRanks(prev => ({ ...prev, [index]: { rank: 'Error', icon: '', color: '#FF0000' } }));
+      const rankData = await RankService.fetchRank(account, apiKey || undefined);
+      setRanks((prev) => ({ ...prev, [index]: rankData }));
+
+      // Update rank history
+      if (rankData.rank && rankData.rank !== 'Unranked' && rankData.rank !== 'Error' && rankData.rank !== 'Account Private') {
+        const entry: RankHistoryEntry = {
+          date: new Date().toISOString(),
+          rank: rankData.rank,
+          rr: rankData.rr,
+          icon: rankData.icon,
+          color: rankData.color,
+        };
+        setRankHistories((prev) => {
+          const existing = prev[account.id] || { history: [], peakRank: '', peakRR: 0, peakIcon: '' };
+          const newHistory = [...existing.history, entry].slice(-50); // Keep last 50
+          const peakRR = Math.max(existing.peakRR, rankData.rr);
+          const peakRank = peakRR > existing.peakRR ? rankData.rank : existing.peakRank;
+          const peakIcon = peakRR > existing.peakRR ? rankData.icon : existing.peakIcon;
+          const updated = { ...prev, [account.id]: { history: newHistory, peakRank, peakRR, peakIcon } };
+          // Persist asynchronously
+          if (window.electronAPI?.saveRankHistory) {
+            const encrypted = EncryptionService.encrypt(JSON.stringify(updated));
+            window.electronAPI.saveRankHistory(encrypted);
+          }
+          return updated;
+        });
+      }
+    } catch {
+      setRanks((prev) => ({ ...prev, [index]: { rank: 'Error', rr: 0, icon: '', color: '#FF0000' } }));
     } finally {
-      setLoadingRanks(prev => {
+      setLoadingRanks((prev) => {
         const newSet = new Set(prev);
         newSet.delete(index);
         return newSet;
       });
     }
-  }, [loadingRanks]);
+  }, [loadingRanks, apiKey]);
 
-  // Auto-fetch all ranks when accounts are loaded on app start
+  // Auto-fetch all ranks when accounts are loaded
   useEffect(() => {
     const autoFetchAllRanks = async () => {
       if (accounts.length === 0) return;
-      
       shouldStopFetchingRef.current = false;
       setIsFetchingAll(true);
-      
-      // Fetch ranks for all accounts with delays between requests
       for (let i = 0; i < accounts.length; i++) {
-        if (shouldStopFetchingRef.current) {
-          console.log('Rank fetching stopped by user');
-          break;
-        }
-        
+        if (shouldStopFetchingRef.current) break;
         const account = accounts[i];
         if (account.riotId && account.hashtag) {
           setCurrentlyFetchingIndex(i);
           await fetchRankForAccount(i, account);
-          // Add delay between requests to avoid overwhelming the API
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((r) => setTimeout(r, 500));
         }
       }
-      
       setIsFetchingAll(false);
       setCurrentlyFetchingIndex(null);
     };
-
     autoFetchAllRanks();
-  }, [accounts.length]); // Only trigger when accounts.length changes (i.e., when accounts are first loaded)
+  }, [accounts.length]);
 
   const handleStopFetching = useCallback(() => {
     shouldStopFetchingRef.current = true;
@@ -417,57 +487,109 @@ function AppContent() {
   const handleRefreshAllRanks = useCallback(async () => {
     shouldStopFetchingRef.current = false;
     setIsFetchingAll(true);
-    
     for (let i = 0; i < accounts.length; i++) {
-      if (shouldStopFetchingRef.current) {
-        console.log('Rank fetching stopped by user');
-        break;
-      }
-      
+      if (shouldStopFetchingRef.current) break;
       const account = accounts[i];
       if (account.riotId && account.hashtag) {
         setCurrentlyFetchingIndex(i);
         await fetchRankForAccount(i, account);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((r) => setTimeout(r, 500));
       }
     }
-    
     setIsFetchingAll(false);
     setCurrentlyFetchingIndex(null);
   }, [accounts, fetchRankForAccount]);
 
+  // Auto-refresh
+  useEffect(() => {
+    if (autoRefreshRef.current) {
+      clearInterval(autoRefreshRef.current);
+      autoRefreshRef.current = null;
+    }
+    if (autoRefreshEnabled && isAuthenticated) {
+      const interval = (settings.refreshInterval || 30) * 60 * 1000;
+      autoRefreshRef.current = setInterval(() => {
+        handleRefreshAllRanks();
+      }, interval);
+    }
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
+    };
+  }, [autoRefreshEnabled, settings.refreshInterval, isAuthenticated]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      if (e.key === '?' && !ctrl) {
+        e.preventDefault();
+        setShowShortcuts((p) => !p);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setSelectedAccounts(new Set());
+        setShowFileUpload(false);
+        setShowStatistics(false);
+        setShowShortcuts(false);
+        setShowRankHistory(null);
+        setShowTagManager(false);
+        setEditingAccount(null);
+        setEditingAccountIndex(null);
+        return;
+      }
+      if (ctrl && e.key === 'f') { e.preventDefault(); document.querySelector<HTMLInputElement>('input[placeholder*="Search"]')?.focus(); }
+      if (ctrl && e.key === 'n' && isAuthenticated) { e.preventDefault(); setEditingAccount(null); setEditingAccountIndex(null); }
+      if (ctrl && e.key === 'r') { e.preventDefault(); handleRefreshAllRanks(); }
+      if (ctrl && e.shiftKey && e.key === 'I') { e.preventDefault(); setShowFileUpload((p) => !p); }
+      if (ctrl && e.shiftKey && e.key === 'S') { e.preventDefault(); setShowStatistics((p) => !p); }
+      if (ctrl && e.shiftKey && e.key === 'G') { e.preventDefault(); handleViewChange(viewLayout === 'list' ? 'grid' : 'list'); }
+      if (ctrl && e.shiftKey && e.key === 'C') { e.preventDefault(); handleToggleCompact(); }
+      if (ctrl && e.shiftKey && e.key === 'E') { e.preventDefault(); handleExport(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAuthenticated, viewLayout, accounts, ranks]);
 
   const filteredAccounts = useMemo(() => {
-    if (!searchTerm) return accounts;
-    return accounts.filter(account =>
-      account.riotId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.username.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [accounts, searchTerm]);
+    let result = accounts;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (a) => a.riotId.toLowerCase().includes(term) || a.username.toLowerCase().includes(term)
+      );
+    }
+
+    if (selectedTag) {
+      result = result.filter((a) => a.tags?.includes(selectedTag));
+    }
+
+    if (lendingFilter === 'lent') {
+      result = result.filter((a) => a.lentTo);
+    } else if (lendingFilter === 'available') {
+      result = result.filter((a) => !a.lentTo);
+    }
+
+    return result;
+  }, [accounts, searchTerm, selectedTag, lendingFilter]);
 
   const sortedAccounts = useMemo(() => {
-    const sortableAccounts = [...filteredAccounts];
-    if (sortConfig !== null && sortConfig.key !== 'rank') {
-      sortableAccounts.sort((a, b) => {
+    const sortable = [...filteredAccounts];
+    if (sortConfig && sortConfig.key !== 'rank') {
+      sortable.sort((a, b) => {
         const key = sortConfig.key as keyof Account;
-        const aValue = a[key];
-        const bValue = b[key];
-        
-        // Handle undefined values
-        if (aValue === undefined && bValue === undefined) return 0;
-        if (aValue === undefined) return sortConfig.direction === 'ascending' ? 1 : -1;
-        if (bValue === undefined) return sortConfig.direction === 'ascending' ? -1 : 1;
-        
-        if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
+        const aVal = a[key];
+        const bVal = b[key];
+        if (aVal === undefined && bVal === undefined) return 0;
+        if (aVal === undefined) return sortConfig.direction === 'ascending' ? 1 : -1;
+        if (bVal === undefined) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aVal < bVal) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'ascending' ? 1 : -1;
         return 0;
       });
     }
-    return sortableAccounts;
+    return sortable;
   }, [filteredAccounts, sortConfig]);
 
   const requestSort = (key: keyof Account | 'rank') => {
@@ -476,17 +598,16 @@ function AppContent() {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
+    saveSettings({ sortKey: key as string, sortDirection: direction });
   };
 
   const saveAccounts = async (accountsToSave: Account[]) => {
     if (!masterPassword) return;
-
     try {
-      // Map riotId back to accountName for JSON storage
-      const accountsForStorage = accountsToSave.map(acc => ({
+      const accountsForStorage = accountsToSave.map((acc) => ({
         ...acc,
         accountName: acc.riotId,
-        riotId: undefined // Remove riotId for backward compatibility
+        riotId: undefined,
       }));
       const dataToEncrypt = JSON.stringify(accountsForStorage);
       const encryptedData = EncryptionService.encrypt(dataToEncrypt);
@@ -496,22 +617,38 @@ function AppContent() {
       } else {
         setError(`Failed to save accounts: ${result.error || 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error('Error saving accounts:', error);
-      setError('Failed to save accounts. Please try again.');
+    } catch (err) {
+      console.error('Error saving accounts:', err);
+      setError('Failed to save accounts.');
     }
   };
 
-  const handlePasswordVerified = (password: string) => {
+  const handlePasswordVerified = async (password: string) => {
     setMasterPassword(password);
+
+    // Load salt FIRST before deriving the key
+    if (window.electronAPI?.loadEncryptionSalt) {
+      const saltResult = await window.electronAPI.loadEncryptionSalt();
+      if (saltResult.success && saltResult.data) {
+        EncryptionService.setSalt(saltResult.data);
+      }
+    }
+
+    // Now derive the key (uses existing salt or generates new one)
+    EncryptionService.setPassword(password);
+
+    // Save salt if new
+    const salt = EncryptionService.getSalt();
+    if (salt && window.electronAPI?.saveEncryptionSalt) {
+      await window.electronAPI.saveEncryptionSalt(salt);
+    }
+
     setIsAuthenticated(true);
     setShowPasswordDialog(false);
   };
 
   const handlePasswordDialogCancel = () => {
     setShowPasswordDialog(false);
-    // In a real app, you might want to close the window here
-    // window.electron?.closeApp?.();
   };
 
   const handleEditAccount = (account: Account, index: number) => {
@@ -522,6 +659,11 @@ function AppContent() {
   const handleDeleteAccount = (index: number) => {
     const updatedAccounts = accounts.filter((_, i) => i !== index);
     saveAccounts(updatedAccounts);
+    setSelectedAccounts((prev) => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
   };
 
   const handleToggleSkins = (index: number) => {
@@ -533,41 +675,30 @@ function AppContent() {
 
   const handleAccountsImported = (importedAccounts: Account[]) => {
     const updatedAccounts = [...accounts];
-    
-    // For each imported account, check if username already exists
-    importedAccounts.forEach(importedAccount => {
+    importedAccounts.forEach((importedAccount) => {
       const existingIndex = updatedAccounts.findIndex(
-        existing => existing.username.toLowerCase() === importedAccount.username.toLowerCase() ||
-                   existing.riotId.toLowerCase() === importedAccount.riotId.toLowerCase()
+        (existing) =>
+          existing.username.toLowerCase() === importedAccount.username.toLowerCase() ||
+          existing.riotId.toLowerCase() === importedAccount.riotId.toLowerCase()
       );
-      
       if (existingIndex >= 0) {
-        // Replace existing account with imported data
-        updatedAccounts[existingIndex] = {
-          ...importedAccount,
-          id: updatedAccounts[existingIndex].id // Keep the original ID
-        };
+        updatedAccounts[existingIndex] = { ...importedAccount, id: updatedAccounts[existingIndex].id };
       } else {
-        // Add new account if it doesn't exist
         updatedAccounts.push(importedAccount);
       }
     });
-    
     saveAccounts(updatedAccounts);
     setShowFileUpload(false);
   };
 
   const handleFormSubmit = (account: Account) => {
     if (editingAccountIndex !== null) {
-      // Update existing account
       const updatedAccounts = accounts.map((acc, index) =>
         index === editingAccountIndex ? account : acc
       );
       saveAccounts(updatedAccounts);
     } else {
-      // Add new account
-      const updatedAccounts = [...accounts, account];
-      saveAccounts(updatedAccounts);
+      saveAccounts([...accounts, account]);
     }
     setEditingAccount(null);
     setEditingAccountIndex(null);
@@ -575,13 +706,95 @@ function AppContent() {
 
   const handleCheckForUpdates = async () => {
     if (!window.electronAPI) return;
-    
-    try {
-      await window.electronAPI.checkForUpdates();
-    } catch (error) {
-      console.error('Failed to check for updates:', error);
+    try { await window.electronAPI.checkForUpdates(); } catch { /* ignore */ }
+  };
+
+  // Bulk actions
+  const handleBulkDelete = () => {
+    const indices = Array.from(selectedAccounts).sort((a, b) => b - a);
+    let updated = [...accounts];
+    indices.forEach((i) => { updated = updated.filter((_, idx) => idx !== i); });
+    saveAccounts(updated);
+    setSelectedAccounts(new Set());
+  };
+
+  const handleBulkTag = (tag: string) => {
+    const updatedAccounts = accounts.map((acc, i) =>
+      selectedAccounts.has(i) ? { ...acc, tags: [...(acc.tags || []), tag].filter((v, idx, arr) => arr.indexOf(v) === idx) } : acc
+    );
+    saveAccounts(updatedAccounts);
+    setSelectedAccounts(new Set());
+  };
+
+  const handleBulkRefresh = async () => {
+    const indices = Array.from(selectedAccounts);
+    for (const i of indices) {
+      if (accounts[i]?.riotId && accounts[i]?.hashtag) {
+        await fetchRankForAccount(i, accounts[i]);
+        await new Promise((r) => setTimeout(r, 300));
+      }
     }
   };
+
+  const handleSelectAll = () => {
+    if (selectedAccounts.size === accounts.length) {
+      setSelectedAccounts(new Set());
+    } else {
+      setSelectedAccounts(new Set(accounts.map((_, i) => i)));
+    }
+  };
+
+  const handleViewChange = (view: 'list' | 'grid') => {
+    setViewLayout(view);
+    saveSettings({ viewLayout: view });
+  };
+
+  const handleToggleCompact = () => {
+    setCompactView((c) => {
+      saveSettings({ compactView: !c });
+      return !c;
+    });
+  };
+
+  const handleExport = () => {
+    const data = accounts.map((a) => ({
+      'Riot ID': `${a.riotId}#${a.hashtag}`,
+      Username: a.username,
+      Password: a.password,
+      Region: a.region.toUpperCase(),
+      Skins: a.hasSkins ? 'Yes' : 'No',
+      Tags: (a.tags || []).join(', '),
+      'Lent To': a.lentTo || '',
+      'Lent Since': a.lentSince || '',
+      Notes: a.notes || '',
+    }));
+    const csv =
+      Object.keys(data[0]).join(',') +
+      '\n' +
+      data.map((row) => Object.values(row).map((v) => `"${v}"`).join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `valorant-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleUpdateTags = (accountId: string, tags: string[]) => {
+    const updatedAccounts = accounts.map((a) => (a.id === accountId ? { ...a, tags } : a));
+    saveAccounts(updatedAccounts);
+  };
+
+  const handleUpdateLending = (accountId: string, lentTo: string) => {
+    const updatedAccounts = accounts.map((a) =>
+      a.id === accountId ? { ...a, lentTo: lentTo || undefined, lentSince: lentTo ? new Date().toISOString() : undefined } : a
+    );
+    saveAccounts(updatedAccounts);
+  };
+
+  const selectedRankHistory = showRankHistory ? rankHistories[showRankHistory] : null;
 
   return (
     <ThemeProvider theme={theme}>
@@ -589,7 +802,7 @@ function AppContent() {
       <AppContainer>
         <Container>
           <Header>
-            <div /> {/* Spacer for left side */}
+            <div />
             <HeaderContent>
               <Title>Valorant Account Manager</Title>
               <Subtitle>Secure account management and rank tracking</Subtitle>
@@ -598,12 +811,8 @@ function AppContent() {
               <UpdateButton onClick={handleCheckForUpdates} title="Check for updates">
                 <UpdateIcon className="update-icon">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2V6.25L16 2.25L20 6.25L16 10.25L12 6.25V10.5C16.14 10.5 19.5 13.86 19.5 18H21C21 13.03 16.97 9 12 9V2Z" 
-                          fill="currentColor" 
-                          opacity="0.9"/>
-                    <path d="M12 22V17.75L8 21.75L4 17.75L8 13.75L12 17.75V13.5C7.86 13.5 4.5 10.14 4.5 6H3C3 10.97 7.03 15 12 15V22Z" 
-                          fill="currentColor" 
-                          opacity="0.7"/>
+                    <path d="M12 2V6.25L16 2.25L20 6.25L16 10.25L12 6.25V10.5C16.14 10.5 19.5 13.86 19.5 18H21C21 13.03 16.97 9 12 9V2Z" fill="currentColor" opacity="0.9"/>
+                    <path d="M12 22V17.75L8 21.75L4 17.75L8 13.75L12 17.75V13.5C7.86 13.5 4.5 10.14 4.5 6H3C3 10.97 7.03 15 12 15V22Z" fill="currentColor" opacity="0.7"/>
                     <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
                   </svg>
                 </UpdateIcon>
@@ -622,55 +831,142 @@ function AppContent() {
 
           {isAuthenticated && !showPasswordDialog && (
             <MainContent>
-              {error && (
-                <ErrorContainer>
-                  {error}
-                </ErrorContainer>
+              {error && <ErrorContainer>{error}</ErrorContainer>}
+
+              {/* API Key bar */}
+              <SettingsBar>
+                <SettingLabel>
+                  API Key:
+                  {!showApiKeyInput && !apiKey && (
+                    <Badge style={{ cursor: 'pointer' }} onClick={() => setShowApiKeyInput(true)}>Not Set</Badge>
+                  )}
+                  {!showApiKeyInput && apiKey && (
+                    <Badge style={{ background: '#00D26A', cursor: 'pointer' }} onClick={() => setShowApiKeyInput(true)}>Set ✓</Badge>
+                  )}
+                </SettingLabel>
+                {showApiKeyInput && (
+                  <>
+                    <SettingInput
+                      type="password"
+                      placeholder="HenrikDev API Key"
+                      value={apiKey}
+                      onChange={(e) => { setApiKey(e.target.value); }}
+                      onBlur={() => { saveApiKey(apiKey); setShowApiKeyInput(false); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { saveApiKey(apiKey); setShowApiKeyInput(false); } }}
+                      autoFocus
+                    />
+                    <ImportButton
+                      as="a"
+                      href="https://api.henrikdev.xyz/dashboard"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '11px', padding: '4px 8px', textDecoration: 'none' }}
+                    >
+                      Get Key
+                    </ImportButton>
+                  </>
+                )}
+                <SettingLabel style={{ marginLeft: '8px' }}>
+                  <input type="checkbox" checked={autoRefreshEnabled} onChange={(e) => setAutoRefreshEnabled(e.target.checked)} />
+                  Auto-refresh ({settings.refreshInterval}min)
+                </SettingLabel>
+                <ImportButton onClick={handleExport} style={{ fontSize: '11px', padding: '4px 8px', background: '#6c757d', marginLeft: 'auto' }}>
+                  Export CSV
+                </ImportButton>
+                <ImportButton onClick={() => setShowShortcuts(true)} style={{ fontSize: '11px', padding: '4px 8px', background: 'transparent', border: '1px solid #666' }}>
+                  ? Shortcuts
+                </ImportButton>
+              </SettingsBar>
+
+              {selectedAccounts.size > 0 && (
+                <BulkActionBar
+                  count={selectedAccounts.size}
+                  onDelete={handleBulkDelete}
+                  onTag={handleBulkTag}
+                  onRefresh={handleBulkRefresh}
+                  onClear={() => setSelectedAccounts(new Set())}
+                  existingTags={allTags}
+                />
               )}
 
-              <AccountForm
-                onSubmit={handleFormSubmit}
-                initialData={editingAccount}
-              />
+              <AccountForm onSubmit={handleFormSubmit} initialData={editingAccount} />
 
               <ControlsContainer>
                 <SearchBarContainer>
                   <SearchBar searchTerm={searchTerm} onSearchTermChange={setSearchTerm} />
                 </SearchBarContainer>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <ViewToggle 
-                    currentView={viewLayout}
-                    onViewChange={setViewLayout}
-                  />
-                  <ImportButton onClick={() => setShowFileUpload(!showFileUpload)}>
-                    📁 Import Accounts
-                  </ImportButton>
-                  <ImportButton onClick={() => setShowStatistics(!showStatistics)}>
-                    📊 Statistics
+                  <ViewToggle currentView={viewLayout} onViewChange={handleViewChange} />
+                  <ImportButton onClick={() => setShowFileUpload(!showFileUpload)}>📁 Import</ImportButton>
+                  <ImportButton onClick={() => setShowStatistics(!showStatistics)}>📊 Stats</ImportButton>
+                  <ImportButton onClick={handleToggleCompact} style={{ background: compactView ? '#00D26A' : 'transparent', border: '1px solid #666' }}>
+                    {compactView ? '📋 Compact ✓' : '📋 Compact'}
                   </ImportButton>
                 </div>
               </ControlsContainer>
 
+              {/* Tag and lending filters */}
+              <SettingsBar>
+                <SettingLabel>Filter by tag:</SettingLabel>
+                <select
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  style={{
+                    padding: '4px 8px', border: '1px solid #666', borderRadius: '4px',
+                    background: theme.colors.background, color: theme.colors.text.primary, fontSize: '12px',
+                  }}
+                >
+                  <option value="">All tags</option>
+                  {allTags.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <SettingLabel>Lending:</SettingLabel>
+                <select
+                  value={lendingFilter}
+                  onChange={(e) => setLendingFilter(e.target.value as 'all' | 'lent' | 'available')}
+                  style={{
+                    padding: '4px 8px', border: '1px solid #666', borderRadius: '4px',
+                    background: theme.colors.background, color: theme.colors.text.primary, fontSize: '12px',
+                  }}
+                >
+                  <option value="all">All</option>
+                  <option value="lent">Lent out</option>
+                  <option value="available">Available</option>
+                </select>
+                <ImportButton onClick={() => setShowTagManager(true)} style={{ fontSize: '11px', padding: '4px 8px', background: 'transparent', border: '1px solid #666', marginLeft: 'auto' }}>
+                  🏷 Manage Tags
+                </ImportButton>
+              </SettingsBar>
+
               {showFileUpload && (
-                <FileUpload
-                  isVisible={showFileUpload}
-                  onAccountsImported={handleAccountsImported}
-                  onClose={() => setShowFileUpload(false)}
-                />
+                <FileUpload isVisible={showFileUpload} onAccountsImported={handleAccountsImported} onClose={() => setShowFileUpload(false)} />
               )}
 
               {showStatistics && (
-                <AccountStatistics
+                <AccountStatistics accounts={accounts} isVisible={showStatistics} onClose={() => setShowStatistics(false)} ranks={ranks} />
+              )}
+
+              {showTagManager && (
+                <TagManager
                   accounts={accounts}
-                  isVisible={showStatistics}
-                  onClose={() => setShowStatistics(false)}
+                  allTags={allTags}
+                  onUpdateTags={handleUpdateTags}
+                  onClose={() => setShowTagManager(false)}
+                />
+              )}
+
+              {showRankHistory && selectedRankHistory && (
+                <RankHistoryPanel
+                  accountId={showRankHistory}
+                  history={selectedRankHistory.history}
+                  peakRank={selectedRankHistory.peakRank}
+                  peakRR={selectedRankHistory.peakRR}
+                  peakIcon={selectedRankHistory.peakIcon}
+                  onClose={() => setShowRankHistory(null)}
                 />
               )}
 
               {isLoading ? (
-                <LoadingContainer>
-                  Loading accounts...
-                </LoadingContainer>
+                <LoadingContainer>Loading accounts...</LoadingContainer>
               ) : viewLayout === 'grid' ? (
                 <AccountGrid
                   accounts={sortedAccounts}
@@ -683,6 +979,18 @@ function AppContent() {
                   currentlyFetchingIndex={currentlyFetchingIndex}
                   isFetchingAll={isFetchingAll}
                   onStopFetching={handleStopFetching}
+                  selectedAccounts={selectedAccounts}
+                  onToggleSelect={(index) => {
+                    setSelectedAccounts((prev) => {
+                      const next = new Set(prev);
+                      next.has(index) ? next.delete(index) : next.add(index);
+                      return next;
+                    });
+                  }}
+                  compactView={compactView}
+                  rankHistories={rankHistories}
+                  onShowRankHistory={(id) => setShowRankHistory(id)}
+                  onUpdateLending={handleUpdateLending}
                 />
               ) : (
                 <AccountTable
@@ -699,7 +1007,25 @@ function AppContent() {
                   currentlyFetchingIndex={currentlyFetchingIndex}
                   isFetchingAll={isFetchingAll}
                   onStopFetching={handleStopFetching}
+                  selectedAccounts={selectedAccounts}
+                  onToggleSelect={(index) => {
+                    setSelectedAccounts((prev) => {
+                      const next = new Set(prev);
+                      next.has(index) ? next.delete(index) : next.add(index);
+                      return next;
+                    });
+                  }}
+                  onSelectAll={handleSelectAll}
+                  allSelected={selectedAccounts.size === accounts.length && accounts.length > 0}
+                  compactView={compactView}
+                  rankHistories={rankHistories}
+                  onShowRankHistory={(id) => setShowRankHistory(id)}
+                  onUpdateLending={handleUpdateLending}
                 />
+              )}
+
+              {showShortcuts && (
+                <KeyboardShortcutsHelp shortcuts={SHORTCUTS} onClose={() => setShowShortcuts(false)} />
               )}
             </MainContent>
           )}
@@ -707,16 +1033,11 @@ function AppContent() {
           <Footer>
             <FooterText>
               Made with ❤️ by{' '}
-              <GithubLink 
-                href="https://github.com/nisarganag" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
+              <GithubLink href="https://github.com/nisarganag" target="_blank" rel="noopener noreferrer">
                 Nisarga
               </GithubLink>
             </FooterText>
           </Footer>
-
         </Container>
       </AppContainer>
       <UpdateManager />

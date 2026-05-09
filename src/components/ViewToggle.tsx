@@ -7,10 +7,10 @@ const ToggleContainer = styled.div`
   gap: ${props => props.theme.sizes.spacing.sm};
 `;
 
-const ToggleButton = styled.button<{ isActive: boolean }>`
-  background: ${props => props.isActive ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.isActive ? 'white' : props.theme.colors.text.secondary};
-  border: 1px solid ${props => props.isActive ? props.theme.colors.primary : props.theme.colors.border};
+const ToggleButton = styled.button<{ $isActive: boolean }>`
+  background: ${props => props.$isActive ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.$isActive ? 'white' : props.theme.colors.text.secondary};
+  border: 1px solid ${props => props.$isActive ? props.theme.colors.primary : props.theme.colors.border};
   border-radius: ${props => props.theme.sizes.borderRadius};
   padding: ${props => props.theme.sizes.spacing.xs} ${props => props.theme.sizes.spacing.sm};
   font-size: ${props => props.theme.sizes.fontSize.small};
@@ -19,10 +19,10 @@ const ToggleButton = styled.button<{ isActive: boolean }>`
   display: flex;
   align-items: center;
   gap: ${props => props.theme.sizes.spacing.xs};
-  
+
   &:hover {
-    background: ${props => props.isActive ? props.theme.colors.primary : `${props.theme.colors.primary}20`};
-    color: ${props => props.isActive ? 'white' : props.theme.colors.primary};
+    background: ${props => props.$isActive ? props.theme.colors.primary : `${props.theme.colors.primary}20`};
+    color: ${props => props.$isActive ? 'white' : props.theme.colors.primary};
   }
 `;
 
@@ -42,14 +42,14 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({ currentView, onViewChang
     <ToggleContainer>
       <ToggleLabel>View:</ToggleLabel>
       <ToggleButton
-        isActive={currentView === 'list'}
+        $isActive={currentView === 'list'}
         onClick={() => onViewChange('list')}
         title="List View"
       >
         📋 List
       </ToggleButton>
       <ToggleButton
-        isActive={currentView === 'grid'}
+        $isActive={currentView === 'grid'}
         onClick={() => onViewChange('grid')}
         title="Grid View"
       >

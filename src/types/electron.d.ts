@@ -3,11 +3,12 @@ export interface ElectronAPI {
   loadAccounts: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
   saveMasterKey: (encryptedHash: string) => Promise<{ success: boolean; error?: string }>;
   loadMasterKey: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
-  fetchRank: (region: string, username: string, tag: string) => Promise<{ success: boolean; data?: { current_rank?: string } | string; error?: string }>;
+  fetchRank: (region: string, username: string, tag: string, apiKey?: string) => Promise<{ success: boolean; data?: any; error?: string }>;
+  fetchRankHistory: (region: string, username: string, tag: string, apiKey?: string) => Promise<{ success: boolean; data?: any; error?: string }>;
   saveThemePreference: (theme: 'dark' | 'light') => Promise<{ success: boolean; error?: string }>;
   loadThemePreference: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
-  processExecutableFile: (base64Data: string, fileName?: string) => Promise<{ 
-    success: boolean; 
+  processExecutableFile: (base64Data: string, fileName?: string) => Promise<{
+    success: boolean;
     accounts?: Array<{
       riotId: string;
       hashtag: string;
@@ -16,12 +17,19 @@ export interface ElectronAPI {
       region: string;
       hasSkins: boolean;
       currentRank: string;
-    }>; 
+    }>;
     error?: string;
     message?: string;
   }>;
-  
-  // Auto-updater methods
+  saveSettings: (encryptedData: string) => Promise<{ success: boolean; error?: string }>;
+  loadSettings: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
+  saveRankHistory: (encryptedData: string) => Promise<{ success: boolean; error?: string }>;
+  loadRankHistory: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
+  saveApiKey: (encryptedData: string) => Promise<{ success: boolean; error?: string }>;
+  loadApiKey: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
+  saveEncryptionSalt: (salt: string) => Promise<{ success: boolean; error?: string }>;
+  loadEncryptionSalt: () => Promise<{ success: boolean; data?: string | null; error?: string }>;
+
   checkForUpdates: () => Promise<{ success: boolean; data?: any; error?: string }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
   installUpdate: () => Promise<{ success: boolean; error?: string }>;

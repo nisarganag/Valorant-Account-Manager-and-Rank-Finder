@@ -7,4 +7,8 @@ export { SearchBar } from './SearchBar';
 export { ThemeToggle } from './ThemeToggle';
 export { ViewToggle } from './ViewToggle';
 export { FileUpload } from './FileUpload';
+export { BulkActionBar } from './BulkActionBar';
+export { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+export { RankHistoryPanel } from './RankHistoryPanel';
+export { TagManager } from './TagManager';
 export { default as UpdateManager } from './UpdateManager';

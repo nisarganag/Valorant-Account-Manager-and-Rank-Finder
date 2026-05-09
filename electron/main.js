@@ -1,22 +1,20 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } from 'electron';
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import os from 'os';
-import axios from 'axios';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === 'development';
 
-// Auto-updater configuration
 autoUpdater.checkForUpdatesAndNotify();
-autoUpdater.autoDownload = false; // Don't auto-download, ask user first
+autoUpdater.autoDownload = false;
 
-// Auto-updater event handlers
 let mainWindow;
+let tray;
 
 autoUpdater.on('checking-for-update', () => {
     console.log('Checking for update...');
@@ -26,8 +24,6 @@ autoUpdater.on('checking-for-update', () => {
 autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info);
     sendStatusToWindow('Update available!');
-    
-    // Show dialog asking user if they want to download the update
     dialog.showMessageBox(mainWindow, {
         type: 'info',
         title: 'Update Available',
@@ -64,8 +60,6 @@ autoUpdater.on('download-progress', (progressObj) => {
 autoUpdater.on('update-downloaded', (info) => {
     console.log('Update downloaded:', info);
     sendStatusToWindow('Update downloaded');
-    
-    // Show dialog asking user if they want to restart and install
     dialog.showMessageBox(mainWindow, {
         type: 'info',
         title: 'Update Ready',
@@ -86,12 +80,34 @@ function sendStatusToWindow(text) {
     }
 }
 
-function createWindow() {
-    // Set icon path based on environment
-    const iconPath = isDev 
+function createTray() {
+    const iconPath = isDev
         ? path.join(__dirname, '../public/icons/Valorant_Account_Manager.png')
         : path.join(process.resourcesPath, 'app.asar/dist/icons/Valorant_Account_Manager.png');
-    
+
+    try {
+        const icon = nativeImage.createFromPath(iconPath);
+        tray = new Tray(icon.resize({ width: 16, height: 16 }));
+
+        const contextMenu = Menu.buildFromTemplate([
+            { label: 'Show App', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
+            { type: 'separator' },
+            { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
+        ]);
+
+        tray.setToolTip('Valorant Account Manager');
+        tray.setContextMenu(contextMenu);
+        tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus(); });
+    } catch (e) {
+        console.error('Failed to create tray:', e);
+    }
+}
+
+function createWindow() {
+    const iconPath = isDev
+        ? path.join(__dirname, '../public/icons/Valorant_Account_Manager.png')
+        : path.join(process.resourcesPath, 'app.asar/dist/icons/Valorant_Account_Manager.png');
+
     mainWindow = new BrowserWindow({
         width: 1556,
         height: 982,
@@ -106,12 +122,10 @@ function createWindow() {
         show: false
     });
 
-    // Load the React app
     if (isDev) {
         mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools();
     } else {
-        // In production, the app structure is: app.asar/electron/main.js and app.asar/dist/index.html
         const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
         mainWindow.loadFile(indexPath).catch(err => {
             console.error('Failed to load file:', err);
@@ -120,46 +134,56 @@ function createWindow() {
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
-        
-        // Check for updates after window is ready (only in production)
         if (!isDev) {
             setTimeout(() => {
                 autoUpdater.checkForUpdatesAndNotify();
-            }, 3000); // Wait 3 seconds before checking for updates
+            }, 3000);
         }
     });
 
-    // Handle window closed
-    mainWindow.on('closed', () => {
-        app.quit();
+    // Minimize to tray instead of closing
+    mainWindow.on('close', (event) => {
+        if (!app.isQuitting && tray) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
     });
 
     return mainWindow;
 }
 
-// This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+    createTray();
     createWindow();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
+        } else {
+            mainWindow?.show();
         }
     });
 });
 
-// Quit when all windows are closed, except on macOS
+app.on('before-quit', () => {
+    app.isQuitting = true;
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
     }
 });
 
-// IPC handlers for secure file operations
+// ---- IPC Handlers ----
+
+function getFilePath(filename) {
+    return path.join(os.homedir(), filename);
+}
+
 ipcMain.handle('save-accounts', async (event, encryptedData) => {
     try {
-        const accountsPath = path.join(os.homedir(), 'accounts.json');
-        await fs.promises.writeFile(accountsPath, encryptedData, 'utf8');
+        await fs.promises.writeFile(getFilePath('accounts.json'), encryptedData, 'utf8');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -168,21 +192,17 @@ ipcMain.handle('save-accounts', async (event, encryptedData) => {
 
 ipcMain.handle('load-accounts', async () => {
     try {
-        const accountsPath = path.join(os.homedir(), 'accounts.json');
-        const data = await fs.promises.readFile(accountsPath, 'utf8');
+        const data = await fs.promises.readFile(getFilePath('accounts.json'), 'utf8');
         return { success: true, data };
     } catch (error) {
-        if (error.code === 'ENOENT') {
-            return { success: true, data: null };
-        }
+        if (error.code === 'ENOENT') return { success: true, data: null };
         return { success: false, error: error.message };
     }
 });
 
 ipcMain.handle('save-master-key', async (event, encryptedHash) => {
     try {
-        const masterKeyPath = path.join(os.homedir(), 'valorant-master.key');
-        await fs.promises.writeFile(masterKeyPath, encryptedHash, 'utf8');
+        await fs.promises.writeFile(getFilePath('valorant-master.key'), encryptedHash, 'utf8');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -191,48 +211,147 @@ ipcMain.handle('save-master-key', async (event, encryptedHash) => {
 
 ipcMain.handle('load-master-key', async () => {
     try {
-        const masterKeyPath = path.join(os.homedir(), 'valorant-master.key');
-        const data = await fs.promises.readFile(masterKeyPath, 'utf8');
+        const data = await fs.promises.readFile(getFilePath('valorant-master.key'), 'utf8');
         return { success: true, data };
     } catch (error) {
-        if (error.code === 'ENOENT') {
-            return { success: true, data: null };
-        }
+        if (error.code === 'ENOENT') return { success: true, data: null };
         return { success: false, error: error.message };
     }
 });
 
-// Handle app updates and security
+ipcMain.handle('save-settings', async (event, encryptedData) => {
+    try {
+        await fs.promises.writeFile(getFilePath('valorant-settings.json'), encryptedData, 'utf8');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('load-settings', async () => {
+    try {
+        const data = await fs.promises.readFile(getFilePath('valorant-settings.json'), 'utf8');
+        return { success: true, data };
+    } catch (error) {
+        if (error.code === 'ENOENT') return { success: true, data: null };
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('save-rank-history', async (event, encryptedData) => {
+    try {
+        await fs.promises.writeFile(getFilePath('valorant-rank-history.json'), encryptedData, 'utf8');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('load-rank-history', async () => {
+    try {
+        const data = await fs.promises.readFile(getFilePath('valorant-rank-history.json'), 'utf8');
+        return { success: true, data };
+    } catch (error) {
+        if (error.code === 'ENOENT') return { success: true, data: null };
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('save-api-key', async (event, encryptedData) => {
+    try {
+        await fs.promises.writeFile(getFilePath('valorant-apikey.json'), encryptedData, 'utf8');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('load-api-key', async () => {
+    try {
+        const data = await fs.promises.readFile(getFilePath('valorant-apikey.json'), 'utf8');
+        return { success: true, data };
+    } catch (error) {
+        if (error.code === 'ENOENT') return { success: true, data: null };
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('save-encryption-salt', async (event, salt) => {
+    try {
+        await fs.promises.writeFile(getFilePath('valorant-salt.key'), salt, 'utf8');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('load-encryption-salt', async () => {
+    try {
+        const data = await fs.promises.readFile(getFilePath('valorant-salt.key'), 'utf8');
+        return { success: true, data };
+    } catch (error) {
+        if (error.code === 'ENOENT') return { success: true, data: null };
+        return { success: false, error: error.message };
+    }
+});
+
+// Rank fetching - HenrikDev if API key provided, else legacy API
+ipcMain.handle('fetch-rank', async (event, region, riotId, hashtag, apiKey) => {
+    try {
+        if (apiKey) {
+            const url = `https://api.henrikdev.xyz/valorant/v2/mmr/${region}/${riotId}/${hashtag}`;
+            const response = await fetch(url, {
+                headers: { 'User-Agent': 'ValorantAccountManager/1.0', 'Authorization': apiKey },
+            });
+            if (!response.ok) {
+                return { success: false, error: `HTTP ${response.status}` };
+            }
+            const data = await response.json();
+            return { success: true, data };
+        }
+
+        // Legacy fallback
+        const url = `https://vaccie.pythonanywhere.com/mmr/${riotId}/${hashtag}/${region}`;
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        });
+        if (!response.ok) {
+            return { success: false, error: `HTTP ${response.status}` };
+        }
+        const data = await response.text();
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('fetch-rank-history', async (event, region, riotId, hashtag, apiKey) => {
+    try {
+        const url = `https://api.henrikdev.xyz/valorant/v1/mmr-history/${region}/${riotId}/${hashtag}`;
+        const headers = { 'User-Agent': 'ValorantAccountManager/1.0' };
+        if (apiKey) headers['Authorization'] = apiKey;
+
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            return { success: false, error: `HTTP ${response.status}` };
+        }
+        const data = await response.json();
+        return { success: true, data };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
 app.on('web-contents-created', (event, contents) => {
     contents.on('new-window', (event, navigationUrl) => {
         event.preventDefault();
     });
 });
 
-// IPC handler to fetch rank from external API
-ipcMain.handle('fetch-rank', async (event, riotId, hashtag, region) => {
-    try {
-        const url = `https://vaccie.pythonanywhere.com/mmr/${riotId}/${hashtag}/${region}`;
-        console.log('Fetching rank from Electron:', url);
-        const response = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-            },
-            timeout: 30000
-        });
-        return { success: true, data: response.data };
-    } catch (error) {
-        console.error('Failed to fetch rank:', error.message);
-        return { success: false, error: error.message };
-    }
-});
-
-// IPC handlers for auto-updater
+// Auto-updater IPC
 ipcMain.handle('check-for-updates', async () => {
     try {
-        if (isDev) {
-            return { success: false, error: 'Updates not available in development mode' };
-        }
+        if (isDev) return { success: false, error: 'Updates not available in development mode' };
         const result = await autoUpdater.checkForUpdates();
         return { success: true, data: result };
     } catch (error) {
@@ -242,9 +361,7 @@ ipcMain.handle('check-for-updates', async () => {
 
 ipcMain.handle('download-update', async () => {
     try {
-        if (isDev) {
-            return { success: false, error: 'Updates not available in development mode' };
-        }
+        if (isDev) return { success: false, error: 'Updates not available in development mode' };
         await autoUpdater.downloadUpdate();
         return { success: true };
     } catch (error) {
@@ -254,9 +371,7 @@ ipcMain.handle('download-update', async () => {
 
 ipcMain.handle('install-update', async () => {
     try {
-        if (isDev) {
-            return { success: false, error: 'Updates not available in development mode' };
-        }
+        if (isDev) return { success: false, error: 'Updates not available in development mode' };
         autoUpdater.quitAndInstall();
         return { success: true };
     } catch (error) {

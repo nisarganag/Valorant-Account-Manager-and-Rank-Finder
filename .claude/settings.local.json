@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:docs.henrikdev.xyz)",
+      "WebFetch(domain:vaccie.pythonanywhere.com)",
+      "WebFetch(domain:app.swaggerhub.com)",
+      "WebFetch(domain:valapidocs.techchrism.me)",
+      "WebFetch(domain:api.henrikdev.xyz)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
