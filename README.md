@@ -11,23 +11,46 @@ A secure, cross-platform desktop application for managing multiple Valorant acco
 | Platform | File Types | Architectures | Status |
 |----------|------------|---------------|--------|
 | 🪟 **Windows** | `.exe` installer | x64 | ✅ Ready |
-| 🍎 **macOS** | `.dmg`, `.zip` | Intel + Apple Silicon (M1/M2) | ✅ Ready |  
+| 🍎 **macOS** | `.dmg`, `.zip` | Intel + Apple Silicon (M1/M2) | ✅ Ready |
 | 🐧 **Linux** | `.AppImage`, `.deb`, `.rpm` | x64 | ✅ Ready |
 
 ## ✨ Features
 
-- 🔐 **Secure Account Management**: Store multiple Valorant accounts with encrypted credentials
-- 🔒 **Master Password Protection**: All data is encrypted with AES-256 encryption
-- 🎮 **Real-time Rank Tracking**: Automatically fetch and display current competitive ranks
-- 🖼️ **Rank Icons**: Beautiful rank badge display for all competitive tiers
-- 🔄 **Professional Auto-Update System**: Automatic updates with professional UI and animations
-- 📱 **Smart Share System**: Share account details with mobile-like interface and platform integration
-- 🔍 **Search & Filter**: Quickly find accounts with smart search functionality
-- 📊 **Sort by Rank**: Organize accounts by rank, name, or region
-- 🎨 **Modern UI**: Sleek, aesthetic design with smooth animations and professional styling
-- ✅ **Skins Tracking**: Mark accounts that have skins
-- 🌍 **Multi-Region Support**: BR, AP, EU, KR, LATAM, NA
-- 🎯 **Cross-Platform Compatibility**: Native installers for Windows, macOS, and Linux
+### 🔐 Security
+- **Master Password Protection**: All data encrypted with AES-256-CBC using PBKDF2 key derivation (100K iterations)
+- **Per-User Salt**: Unique cryptographic salt per installation prevents rainbow table attacks
+- **Local Storage Only**: Your data never leaves your computer
+
+### 🎮 Account Management
+- **Account CRUD**: Add, edit, delete Valorant accounts with Riot ID#Tag, username, password, region, and notes
+- **🏷 Tags & Groups**: Categorize accounts with custom tags (e.g., "smurf", "main", "EU alts")
+- **Filter by Tag**: Quick filter accounts by any tag
+- **👤 Lending Tracker**: Mark accounts as lent out with borrower name and date
+- **📁 Import/Export**: Import from JSON/CSV files, export all accounts to CSV
+- **📊 Statistics Dashboard**: Total accounts, skin coverage, region distribution, rank distribution
+
+### 🏆 Rank Tracking
+- **Dual API Support**: Uses [HenrikDev API](https://api.henrikdev.xyz) (with API key) for rich data; falls back to basic rank fetching without a key
+- **📈 Rank History**: Bar chart visualization of rank progression over time
+- **🔝 Peak Rank Tracking**: Records highest rank achieved per account
+- **Rank Icons**: Beautiful rank badge display for all 23 competitive tiers (Iron → Radiant)
+- **Auto-Refresh**: Optional scheduled rank refresh at configurable intervals
+- **Bulk Refresh**: Refresh ranks for selected accounts or all at once
+
+### 🖥️ User Experience
+- **⌨️ Keyboard Shortcuts**: Full keyboard navigation — `Ctrl+F` search, `Ctrl+N` new account, `Ctrl+R` refresh all, `?` for help
+- **✅ Bulk Operations**: Multi-select accounts for bulk delete, tag, or refresh
+- **📋 Compact View**: Toggle between standard and dense layouts
+- **🔲 List/Grid Views**: Switch between table and card layouts
+- **🔍 Search & Filter**: Search by Riot ID or username, filter by tag or lending status
+- **🌓 Dark/Light Theme**: Full theme system with Valorant red (#FF4655) accent
+- **🔄 System Tray**: Minimize to tray, quick access context menu
+- **💾 Persistent Preferences**: View layout, sort order, compact mode remembered across sessions
+- **📱 Share Modal**: Share account details via WhatsApp, Telegram, Discord, Twitter, email, or clipboard
+- **🔄 Auto-Updates**: Professional update system with download progress and restart prompt
+
+### 🌍 Multi-Region Support
+BR, AP, EU, KR, LATAM, NA
 
 ## 🚀 Installation
 
@@ -36,11 +59,11 @@ A secure, cross-platform desktop application for managing multiple Valorant acco
 **Download the latest release for your platform:**
 
 #### 🪟 Windows
-- **[Valorant Account Manager Setup.exe](https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/releases/latest)** 
+- **[Valorant Account Manager Setup.exe](https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/releases/latest)**
   - Full installer with shortcuts and auto-updater
   - Supports Windows 10/11 (x64)
 
-#### 🍎 macOS  
+#### 🍎 macOS
 - **[Valorant Account Manager.dmg](https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/releases/latest)**
   - Universal binary (Intel + Apple Silicon)
   - Drag-and-drop installation
@@ -65,7 +88,7 @@ A secure, cross-platform desktop application for managing multiple Valorant acco
 3. Follow the installation wizard
 4. Desktop and start menu shortcuts are created automatically
 
-#### 🍎 macOS Installation  
+#### 🍎 macOS Installation
 1. Download the `.dmg` file
 2. Open the disk image
 3. Drag the app to Applications folder
@@ -119,109 +142,66 @@ sudo dnf install valorant-account-manager*.rpm
    npm run electron-dev
    ```
 
-4. **Build the executable**
+4. **Build for your platform**
    ```bash
-   npm run build-electron
-   ```
-
-5. **Build for your platform**
-   ```bash
-   # Build for current platform only
-   npm run build-electron
-   
-   # Or build for specific platforms:
    npm run build:win    # Windows
    npm run build:mac    # macOS (requires macOS)
    npm run build:linux  # Linux (requires Linux)
-   npm run build:all    # All platforms (limited)
    ```
 
-6. **Find your built application**
-   
-   After building, you'll find platform-specific files in the `dist-electron` folder:
-   
-   **Windows:**
-   - `Valorant Account Manager Setup 1.2.x.exe` (installer)
-   - `win-unpacked/Valorant Account Manager.exe` (portable)
-   
-   **macOS:**
-   - `Valorant Account Manager-1.2.x.dmg` (disk image)
-   - `Valorant Account Manager-1.2.x-mac.zip` (app bundle)
-   
-   **Linux:**
-   - `Valorant Account Manager-1.2.x.AppImage` (portable)
-   - `valorant-account-manager_1.2.x_amd64.deb` (Debian package)
-   - `valorant-account-manager-1.2.x.x86_64.rpm` (RPM package)
+5. **Find your built application** in the `dist-electron` folder
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+F` | Focus search bar |
+| `Ctrl+N` | New account |
+| `Ctrl+R` | Refresh all ranks |
+| `Ctrl+Shift+I` | Toggle import panel |
+| `Ctrl+Shift+S` | Toggle statistics |
+| `Ctrl+Shift+E` | Export accounts to CSV |
+| `Ctrl+Shift+G` | Toggle list/grid view |
+| `Ctrl+Shift+C` | Toggle compact mode |
+| `Escape` | Close all modals / deselect |
+| `?` | Show keyboard shortcuts |
 
 ## 📖 Usage
 
 ### First Time Setup
 
-1. **Create Master Password**: On first launch, you'll be prompted to create a master password. This password encrypts all your account data.
-
-2. **Add Accounts**: Click "Add New Account" and fill in:
+1. **Create Master Password**: On first launch, create a master password. This encrypts all your account data.
+2. **API Key (Optional)**: Click the "Not Set" badge in the settings bar and paste a [HenrikDev API key](https://api.henrikdev.xyz/dashboard) for richer rank data (rank icons, RR, history).
+3. **Add Accounts**: Click "Add New Account" or press `Ctrl+N`:
    - **Riot ID#Tag**: Your Valorant display name with tag (e.g., `PlayerName#1234`)
-   - **Login Username** (optional): Your Riot account username
-   - **Password** (optional): Your account password
+   - **Login Username**: Your Riot account username
+   - **Password**: Your account password
    - **Region**: Select your game region
-
-3. **Fetch Ranks**: Click the refresh icon to fetch ranks for all accounts
+   - **Tags**: Add custom tags like "smurf", "main", "EU alts"
+   - **Lent To**: Track who borrowed the account
+4. **Fetch Ranks**: Ranks auto-fetch on startup, or use the refresh buttons
 
 ### Account Management
 
-- **Edit Account**: Click the edit icon (✏️) on any account row
-- **Delete Account**: Click the delete icon (🗑️) to remove an account
-- **Toggle Skins**: Click the skins checkbox to mark accounts with skins
-- **Individual Refresh**: Click the refresh icon on a specific account to update its rank
-- **Bulk Refresh**: Use the "Refresh All Ranks" button to update all accounts
+- **Edit/Delete**: Use the action buttons on each row
+- **Bulk Operations**: Check the boxes to select multiple accounts, then use the action bar
+- **Tags**: Add tags when creating/editing accounts, or use the Tag Manager (`🏷 Manage Tags`)
+- **Lending**: Enter a name in the "Lent To" column to track borrowed accounts
+- **Import**: Use 📁 Import to load accounts from JSON/CSV files
 
-### Searching & Sorting
+### Views & Layout
 
-- **Search**: Use the search bar to filter accounts by Riot ID or username
-- **Sort by Name**: Click the "Riot ID" column header
-- **Sort by Rank**: Click the "Rank" column header
-- **Sort by Region**: Click the "Region" column header
+- **List/Grid Toggle**: Switch between table and card layouts
+- **Compact Mode**: `Ctrl+Shift+C` for a denser view with more rows on screen
+- **Statistics**: 📊 button shows totals, region distribution, and rank breakdown
 
-## 🔄 Professional Auto-Update System
+## 🔒 Security
 
-The application includes a sophisticated auto-update system with professional UI design that keeps you current with the latest features and security improvements.
-
-### ✨ Professional Update Icon
-
-- **Beautiful SVG Design**: Custom dual-arrow refresh icon with gradient effects
-- **Smooth Animations**: Rotation, scaling, and pulse effects on interaction
-- **Modern Aesthetics**: Integrated with app theme and color scheme
-- **Enhanced Visibility**: Subtle pulse animation for better user awareness
-
-### How It Works
-
-- **Automatic Checks**: The app checks for updates automatically on startup (production builds only)
-- **Manual Updates**: Click the professional update icon in the top-right corner
-- **Cross-Platform Updates**: Works seamlessly on Windows, macOS, and Linux
-- **Smart Downloads**: Updates are downloaded in the background without interrupting your work
-- **Seamless Installation**: Choose when to restart and apply updates
-
-### Update Process
-
-1. **Detection**: App checks GitHub releases for newer versions across all platforms
-2. **Professional Notification**: Stylish popup with modern design and animations
-3. **Platform-Specific Downloads**: Automatically selects correct installer format
-4. **Background Installation**: Updates install automatically after restart
-5. **Version Verification**: Confirms successful update completion
-
-### Cross-Platform Features
-
-- **Windows**: NSIS installer with automatic updates
-- **macOS**: DMG/ZIP updates for both Intel and Apple Silicon
-- **Linux**: AppImage/DEB/RPM updates based on your installation method
-
-### Version Display
-
-- Current app version is always visible in the bottom-left corner
-- Update notifications show detailed version information and release notes
-- Cross-platform compatibility indicators
-
-For detailed information about the update system, see [UPDATE.md](UPDATE.md) and [AUTO_UPDATE_GUIDE.md](AUTO_UPDATE_GUIDE.md).
+- **PBKDF2 Key Derivation**: Encryption key derived from master password with 100,000 iterations and unique salt
+- **AES-256-CBC Encryption**: All account credentials encrypted with random IV per save
+- **Master Password**: Stored as SHA-256 hash only
+- **Local Storage**: All data stored locally on your machine
+- **No Cloud Sync**: Your data never leaves your computer
 
 ## 🛠️ Tech Stack
 
@@ -229,51 +209,55 @@ For detailed information about the update system, see [UPDATE.md](UPDATE.md) and
 - **Desktop Framework**: Electron 38+ with auto-updater
 - **Build Tool**: Vite with Rolldown bundler
 - **Cross-Platform Builds**: electron-builder with GitHub Actions
-- **Encryption**: CryptoJS (AES-256)
-- **API**: Custom Valorant rank fetching service
+- **Encryption**: CryptoJS (AES-256-CBC with PBKDF2)
+- **Rank API**: HenrikDev API (primary) + fallback API
 - **Package Manager**: npm
 - **CI/CD**: GitHub Actions matrix builds (Windows, macOS, Linux)
-- **Release Management**: Automated cross-platform releases
-- **Code Signing**: Platform-specific signing and notarization
 
 ## 📁 Project Structure
 
 ```
 Valorant-Account-Manager-and-Rank-Finder/
-├── electron/                 # Electron main process files
-│   ├── main.js              # Main process entry point
-│   └── preload.js           # Preload script for IPC
+├── electron/                    # Electron main process
+│   ├── main.js                  # Main process, IPC handlers, tray
+│   └── preload.js               # Context bridge for secure IPC
 ├── src/
-│   ├── components/          # React components
-│   │   ├── AccountForm.tsx
-│   │   ├── AccountTable.tsx
-│   │   ├── MasterPasswordDialog.tsx
-│   │   └── SearchBar.tsx
-│   ├── services/            # Business logic
-│   │   └── rankService.ts   # Rank fetching API
-│   ├── utils/              # Utility functions
-│   │   └── encryption.ts    # Encryption/decryption
-│   ├── types/              # TypeScript type definitions
-│   └── theme/              # Styled-components theme
-├── public/icons/            # Rank badges and app icons
-├── build/                   # Platform-specific build assets
-│   ├── entitlements.mac.plist  # macOS entitlements
-│   └── dmg-background.png      # macOS DMG background
-├── .github/workflows/       # GitHub Actions CI/CD
-│   └── release.yml         # Cross-platform build workflow
-├── scripts/                # Automation scripts
-│   └── release.ps1         # Automated release script
+│   ├── components/              # React components
+│   │   ├── AccountForm.tsx      # Add/edit account form with tags & lending
+│   │   ├── AccountTable.tsx     # Table view with bulk select, sorting
+│   │   ├── AccountGrid.tsx      # Card grid view
+│   │   ├── AccountStatistics.tsx # Stats dashboard
+│   │   ├── BulkActionBar.tsx    # Multi-select action toolbar
+│   │   ├── FileUpload.tsx       # JSON/CSV import
+│   │   ├── KeyboardShortcutsHelp.tsx # Shortcuts reference overlay
+│   │   ├── MasterPasswordDialog.tsx  # Auth gate
+│   │   ├── RankHistoryPanel.tsx # Rank history chart with peak tracking
+│   │   ├── SearchBar.tsx        # Search input
+│   │   ├── TagManager.tsx       # Tag management for all accounts
+│   │   ├── ThemeToggle.tsx      # Dark/light mode switch
+│   │   ├── UpdateManager.tsx    # Auto-update notification UI
+│   │   └── ViewToggle.tsx       # List/grid layout toggle
+│   ├── services/
+│   │   └── rankService.ts       # Dual-API rank fetching (HenrikDev + legacy)
+│   ├── utils/
+│   │   └── encryption.ts        # PBKDF2 + AES-256-CBC encryption
+│   ├── contexts/
+│   │   ├── ThemeContext.tsx      # Theme state provider
+│   │   └── useTheme.ts          # Theme hook
+│   ├── types/                   # TypeScript type definitions
+│   └── theme/                   # Dark and light theme definitions
+├── public/icons/                # Rank badges and app icons
+├── build/                       # Platform-specific build assets
+├── examples/                    # Example import files (JSON/CSV)
+├── .github/workflows/           # CI/CD — matrix builds on tag push
 └── package.json
 ```
 
 ## 🚀 Automated Release System
 
-The project features a sophisticated automated release system that builds for all platforms simultaneously.
-
 ### Release Process
 
 ```powershell
-# Automated release (developers)
 .\scripts\release.ps1 -Type patch -Message "Bug fixes and improvements"
 .\scripts\release.ps1 -Type minor -Message "New features and enhancements"
 .\scripts\release.ps1 -Type major -Message "Breaking changes and major updates"
@@ -281,26 +265,11 @@ The project features a sophisticated automated release system that builds for al
 
 ### What Happens Automatically
 
-1. **Version Management**: Automatically bumps version in package.json
-2. **Git Operations**: Creates commits and tags with proper formatting
+1. **Version Management**: Bumps version in package.json
+2. **Git Operations**: Creates commits and tags
 3. **Cross-Platform Builds**: GitHub Actions builds on 3 OS simultaneously
-4. **Release Creation**: Automatically creates GitHub release with all files
-5. **Auto-Update Distribution**: Updates become available to all users instantly
-
-### Build Matrix
-
-| Platform | Runner | Output Files |
-|----------|--------|--------------|
-| Windows | `windows-latest` | `.exe`, `.exe.blockmap`, `latest.yml` |
-| macOS | `macos-latest` | `.dmg`, `.zip`, `*-mac.yml` |
-| Linux | `ubuntu-latest` | `.AppImage`, `.deb`, `.rpm`, `*-linux.yml` |
-
-## 🔒 Security
-
-- **AES-256 Encryption**: All account credentials are encrypted using industry-standard AES-256
-- **Master Password**: Never stored in plain text; only a hash is kept
-- **Local Storage**: All data is stored locally on your machine
-- **No Cloud Sync**: Your data never leaves your computer
+4. **Release Creation**: Creates GitHub release with all platform files
+5. **Auto-Update Distribution**: Updates available to all users instantly
 
 ## 🤝 Contributing
 
@@ -324,31 +293,12 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 🙏 Acknowledgments
 
 - **Riot Games**: For Valorant rank icons and game data
-- **Rank API**: [vaccie.pythonanywhere.com](https://vaccie.pythonanywhere.com) for rank fetching service
+- **[HenrikDev API](https://api.henrikdev.xyz)**: Rank, MMR history, and match data
 - **Electron**: Cross-platform desktop framework
 - **GitHub Actions**: Automated cross-platform builds
 - **Open Source Community**: For the amazing tools and libraries
-- **Valorant Community**: For feedback and feature requests
-- Built with ❤️ for gamers, by gamers
-
-## 📞 Support
-
-### Getting Help
-
-If you encounter any issues or have questions:
-
-- **🐛 Bug Reports**: [Open an issue](https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/issues) with detailed steps to reproduce
-- **💡 Feature Requests**: [Request features](https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/issues) with clear use cases  
-- **📖 Documentation**: Check [existing issues](https://github.com/nisarganag/Valorant-Account-Manager-and-Rank-Finder/issues) for solutions
-- **🔄 Update Issues**: See [AUTO_UPDATE_GUIDE.md](AUTO_UPDATE_GUIDE.md) for update troubleshooting
-
-### Platform-Specific Support
-
-- **🪟 Windows**: Ensure Windows 10/11 with .NET Framework
-- **🍎 macOS**: Compatible with macOS 10.15+ (Intel and Apple Silicon)  
-- **🐧 Linux**: Tested on Ubuntu 20.04+, Fedora 35+, and Arch Linux
 
 ---
 
-**🌍 Cross-Platform • 🔒 Secure • ⚡ Fast**  
+**🌍 Cross-Platform • 🔒 Secure • ⚡ Fast**
 **Made with ❤️ by [Nisarga](https://github.com/nisarganag) for the Valorant community**
